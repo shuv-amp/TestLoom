@@ -24,10 +24,10 @@ TestLoom is a web platform designed to help university students prepare efficien
 
 ## 🛠️ Tech Stack
 
-- **Frontend:** ( Vue.js, Nuxt.js)
-- **Backend:** ( Node.js, Express)
+- **Frontend:** ( Vue.js, Nuxt.js )
+- **Backend:** ( Node.js, Express )
 - **Database:** ( MongoDB )
-- **OCR Integration:** ( Google Vision API)
+- **OCR Integration:** ( Tesseract.js or Google Vision API )
 
 ---
 
