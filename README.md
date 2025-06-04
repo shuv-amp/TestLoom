@@ -5,9 +5,9 @@
 
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.x-4FC08D?style=flat-square&logo=vue.js&logoColor=white)](https://vuejs.org/)
 [![Nuxt.js](https://img.shields.io/badge/Nuxt.js-3.x-00DC82?style=flat-square&logo=nuxt.js&logoColor=white)](https://nuxt.com/)
-[![Express.js](https://img.shields.io/badge/Express.js-4.x-3f8e3f?style=flat-square&logo=express&logoColor=white)](https://expressjs.com)
-[![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-6.x-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://mongodb.com/)
+[![Express.js](https://img.shields.io/badge/Express.js-5.x-3f8e3f?style=flat-square&logo=express&logoColor=white)](https://expressjs.com)
+[![Node.js](https://img.shields.io/badge/Node.js-22.x-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-8.x-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://mongodb.com/)
 
 **Transform your exam preparation with intelligent OCR technology, adaptive learning algorithms, and collaborative study environments.**
 
