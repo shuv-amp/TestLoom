@@ -232,4 +232,4 @@ flowchart TD
 
 ---
 
-*These diagrams represent the core user flows in TestLoom. For implementation details, see our [Architecture Guide](./architecture.md).*
+*These diagrams represent the core user flows in TestLoom. For implementation details, see our [Core Architecture](./core-architecture.png).*
