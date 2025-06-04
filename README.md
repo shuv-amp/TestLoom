@@ -132,43 +132,7 @@ Before you begin, ensure you have the following installed:
 
 <div align="center">
 
-```mermaid
-graph TB
-    subgraph Frontend["Frontend (User Experience)"]
-        A[Vue.js 3 + Nuxt.js 3]
-        style A fill:#ebf5fb,stroke:#3498db
-    end
-    
-    subgraph Backend["Backend (Exam Logic)"]
-        B[Node.js + Express.js]
-        style B fill:#e8f8f5,stroke:#2ecc71
-    end
-    
-    subgraph Database["Question Database"]
-        C[(MongoDB + Mongoose<br>• Questions by year/subject<br>• User progress tracking)]
-        style C fill:#fef9e7,stroke:#f1c40f
-    end
-    
-    subgraph Features["Core Features"]
-        F[Tesseract.js OCR<br>Physical → Digital Conversion]
-        G[Socket.IO<br>Real-time Collaboration]
-        H[Adaptive Quiz Engine<br>Performance Analytics]
-        J[JWT Authentication<br>User Verification]
-    end
-    
-    %% Primary connections
-    A -->|API Requests| B
-    B -->|CRUD Operations| C
-    G -->|Live Updates| A
-    G -->|Collaboration| B
-    J -->|Secured Access| B
-    J -->|Session Management| A
-    F -->|Process Uploads| B
-    H -->|Generates Quizzes| B
-    B -->|Feeds Data| H
-    
-    class Features feature;
-```
+![Core Architecture](https://github.com/shuv-amp/TestLoom/blob/main/docs/diagrams/core-architecture.png)
 
 
 </div>
