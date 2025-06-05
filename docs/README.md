@@ -24,7 +24,7 @@ TestLoom transforms scattered exam preparation into a **unified, intelligent lea
 ---
 
 ## ✨ Core Features
-
+<div align="center">
 <table>
 <tr>
 <td width="50%">
@@ -87,6 +87,7 @@ TestLoom transforms scattered exam preparation into a **unified, intelligent lea
 </td>
 </tr>
 </table>
+</div>
 
 ---
 
