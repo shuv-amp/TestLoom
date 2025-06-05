@@ -176,11 +176,6 @@ graph TB
     G --> J
     H --> K
     
-    classDef client fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    classDef security fill:#ffebee,stroke:#d32f2f,stroke-width:2px
-    classDef app fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
-    classDef data fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    
     class A,B client
     class C,D,E security
     class F,G,H app
