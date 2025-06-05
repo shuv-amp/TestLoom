@@ -1,129 +1,124 @@
-# 🏗️ TestLoom System Architecture
+# 🎯 TestLoom System Architecture
 
-## 🎯 System Overview
+## 🏗️ System Architecture
+
+TestLoom follows a **3-tier architecture** ensuring scalability, security, and maintainability:
 
 ```mermaid
 graph TB
-    %% Styling definitions
-    classDef presentation fill:#e1f5fe,stroke:#0277bd,stroke-width:3px,color:#000
-    classDef gateway fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#000
-    classDef services fill:#e8f5e8,stroke:#2e7d32,stroke-width:3px,color:#000
-    classDef data fill:#fff3e0,stroke:#f57c00,stroke-width:3px,color:#000
-    classDef connections stroke:#424242,stroke-width:2px
+    %% Enhanced styling with consistent colors, borders, and typography
+    classDef userLayer fill:#e8eaf6,stroke:#3f51b5,stroke-width:3px,color:#1a1a1a,font-weight:bold,font-size:12px
+    classDef frontend fill:#e3f2fd,stroke:#1976d2,stroke-width:3px,color:#1a1a1a,font-weight:bold,font-size:12px
+    classDef backend fill:#e8f5e8,stroke:#388e3c,stroke-width:3px,color:#1a1a1a,font-weight:bold,font-size:12px
+    classDef database fill:#fff3e0,stroke:#f57c00,stroke-width:3px,color:#1a1a1a,font-weight:bold,font-size:12px
+    classDef external fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#1a1a1a,font-weight:bold,font-size:12px
+    classDef subgraphStyle fill:#fafafa,stroke:#424242,stroke-width:2px,stroke-dasharray:5 5
     
-    %% Presentation Layer
-    subgraph PRESENTATION ["🎨 Presentation Layer"]
-        direction TB
-        WEB["🌐 Web Application<br/>━━━━━━━━━━━━━━━<br/>• Nuxt.js 3 + Vue.js 3<br/>• Responsive PWA Design<br/>• Real-time UI Updates<br/>• Accessibility Compliant"]
-        MOBILE["📱 Mobile Application<br/>━━━━━━━━━━━━━━━<br/>• React Native<br/>• Offline Quiz Support<br/>• Push Notifications<br/>• Camera Integration"]
+    %% User Layer
+    USERS["👥 University Students<br/>━━━━━━━━━━━━━━━━━━━━━━━<br/>• Browse Questions by Subject/Chapter<br/>• Take Timed Practice Quizzes<br/>• Upload Question Papers (OCR)<br/>• Participate in Discussions"]
+    
+    %% Frontend Layer
+    subgraph FRONTEND [" 🌐 PRESENTATION LAYER "]
+        WEB["📱 Web Application<br/>━━━━━━━━━━━━━━━━━━━━━━━<br/>• Nuxt.js 3 + Vue.js 3<br/>• Responsive Design<br/>• Interactive Quiz Interface<br/>• Real-time Chat UI"]
     end
     
-    %% API Gateway Layer
-    subgraph GATEWAY_LAYER ["🚪 API Gateway & Security"]
-        direction TB
-        GATEWAY["🛡️ Express.js Gateway<br/>━━━━━━━━━━━━━━━<br/>• JWT Authentication (RS256)<br/>• Rate Limiting & DDoS Protection<br/>• CORS & Security Headers<br/>• Request/Response Logging<br/>• API Versioning"]
-        LB["⚖️ Load Balancer<br/>━━━━━━━━━━━━━━━<br/>• Nginx Reverse Proxy<br/>• SSL/TLS Termination<br/>• Health Checks<br/>• Auto-scaling"]
+    %% Backend Layer
+    subgraph BACKEND [" ⚙️ APPLICATION LAYER "]
+        API["🔌 REST API Server<br/>━━━━━━━━━━━━━━━━━━━━━━━<br/>• Node.js + Express.js<br/>• JWT Authentication<br/>• Role-based Access Control<br/>• Question Management APIs"]
+        
+        REALTIME["💬 Real-time Engine<br/>━━━━━━━━━━━━━━━━━━━━━━━<br/>• Socket.IO Integration<br/>• Live Discussions<br/>• Collaborative Features<br/>• Instant Notifications"]
+        
+        OCR["📸 OCR Processing<br/>━━━━━━━━━━━━━━━━━━━━━━━<br/>• Tesseract.js / Google Vision<br/>• Image to Text Conversion<br/>• Question Paper Digitization<br/>• Auto-formatting"]
+        
+        QUIZ["🧠 Quiz Engine<br/>━━━━━━━━━━━━━━━━━━━━━━━<br/>• Adaptive Question Selection<br/>• Timed Practice Sessions<br/>• Performance Analytics<br/>• Progress Tracking"]
     end
     
-    %% Core Services Layer
-    subgraph SERVICES ["⚙️ Core Application Services"]
-        direction TB
-        
-        subgraph AUTH_SERVICE ["🔐 Authentication & Authorization"]
-            AUTH["User Management<br/>━━━━━━━━━━━━━━━<br/>• Multi-factor Authentication<br/>• Role-based Access Control<br/>• Student/Teacher/Admin Roles<br/>• OAuth2 Integration"]
-        end
-        
-        subgraph QUIZ_SERVICE ["🧠 Adaptive Quiz Engine"]
-            QUIZ["Intelligence Core<br/>━━━━━━━━━━━━━━━<br/>• Adaptive Question Selection<br/>• Performance Analytics<br/>• Difficulty Adjustment<br/>• Progress Tracking"]
-            ANALYTICS["📊 Analytics Engine<br/>━━━━━━━━━━━━━━━<br/>• Learning Insights<br/>• Performance Metrics<br/>• Predictive Modeling<br/>• Report Generation"]
-        end
-        
-        subgraph OCR_SERVICE ["📸 OCR & AI Processing"]
-            OCR["Image Processing<br/>━━━━━━━━━━━━━━━<br/>• Tesseract.js Engine<br/>• Google Vision API<br/>• Text Recognition<br/>• Auto-Quiz Generation"]
-            AI["🤖 AI Question Generator<br/>━━━━━━━━━━━━━━━<br/>• NLP Processing<br/>• Question Synthesis<br/>• Difficulty Assessment<br/>• Content Validation"]
-        end
-        
-        subgraph SOCIAL_SERVICE ["💬 Social & Communication"]
-            SOCIAL["Real-time Hub<br/>━━━━━━━━━━━━━━━<br/>• Socket.IO Integration<br/>• Discussion Forums<br/>• Peer-to-Peer Learning<br/>• Live Quiz Sessions"]
-            NOTIF["🔔 Notification Service<br/>━━━━━━━━━━━━━━━<br/>• Push Notifications<br/>• Email Campaigns<br/>• SMS Alerts<br/>• In-app Messages"]
-        end
-        
-        subgraph CONTENT_SERVICE ["📚 Content Management"]
-            CONTENT["Content Engine<br/>━━━━━━━━━━━━━━━<br/>• Question Bank Management<br/>• Subject Categorization<br/>• Curriculum Mapping<br/>• Content Versioning"]
-            SEARCH["🔍 Search & Discovery<br/>━━━━━━━━━━━━━━━<br/>• Elasticsearch Integration<br/>• Semantic Search<br/>• Content Recommendation<br/>• Tagging System"]
-        end
-    end
-    
-    %% Data & Infrastructure Layer
-    subgraph DATA_LAYER ["💾 Data & Infrastructure Layer"]
-        direction TB
-        
-        subgraph PRIMARY_DB ["🗄️ Primary Database"]
-            MONGO["🍃 MongoDB Cluster<br/>━━━━━━━━━━━━━━━<br/>• User Profiles & Authentication<br/>• Question Banks & Metadata<br/>• Quiz Results & Analytics<br/>• Sharded for Scalability"]
-        end
-        
-        subgraph CACHE_LAYER ["⚡ Caching & Session"]
-            REDIS["💎 Redis Cluster<br/>━━━━━━━━━━━━━━━<br/>• Session Management<br/>• Real-time Data Cache<br/>• Leaderboard Storage<br/>• Pub/Sub Messaging"]
-        end
-        
-        subgraph STORAGE_LAYER ["📁 File & Media Storage"]
-            FILES["☁️ Cloud Storage<br/>━━━━━━━━━━━━━━━<br/>• AWS S3 / Google Cloud<br/>• CDN Distribution<br/>• Image & Document Storage<br/>• Backup & Versioning"]
-        end
-        
-        subgraph SEARCH_DB ["🔍 Search Infrastructure"]
-            ELASTIC["🔍 Elasticsearch<br/>━━━━━━━━━━━━━━━<br/>• Full-text Search<br/>• Aggregations & Analytics<br/>• Auto-complete<br/>• Search Suggestions"]
-        end
+    %% Database Layer
+    subgraph DATABASE [" 💾 DATA LAYER "]
+        MONGO["🍃 MongoDB Database<br/>━━━━━━━━━━━━━━━━━━━━━━━<br/>• User Profiles & Authentication<br/>• Question Bank (MCQ + Fill-in-blank)<br/>• Quiz Results & Analytics<br/>• Discussion Threads"]
     end
     
     %% External Services
-    subgraph EXTERNAL ["🌐 External Integrations"]
-        direction TB
-        PAYMENT["💳 Payment Gateway<br/>Stripe/PayPal"]
-        EMAIL["📧 Email Service<br/>SendGrid/AWS SES"]
-        SMS["📱 SMS Service<br/>Twilio/AWS SNS"]
-        MONITOR["📊 Monitoring<br/>New Relic/DataDog"]
+    subgraph EXTERNAL [" 🌐 EXTERNAL SERVICES "]
+        CLOUD["☁️ Cloud Deployment<br/>━━━━━━━━━━━━━━━━━━━━━━━<br/>• AWS / Azure Platform<br/>• Scalable Hosting<br/>• Auto-scaling & Load Balancing"]
+        VISION["👁️ Google Vision API<br/>━━━━━━━━━━━━━━━━━━━━━━━<br/>• Advanced OCR Processing<br/>• Text Recognition<br/>• Document Analysis"]
     end
     
-    %% Connections
-    WEB --> LB
-    MOBILE --> LB
-    LB --> GATEWAY
+    %% Enhanced Connections with consistent arrow styles and labels
+    USERS ===>|"HTTP/HTTPS<br/>Requests"| WEB
+    WEB ==>|"REST API<br/>Calls"| API
+    WEB ==>|"WebSocket<br/>Connection"| REALTIME
+    API ==>|"Image<br/>Processing"| OCR
+    API ==>|"Quiz<br/>Generation"| QUIZ
+    API ==>|"CRUD<br/>Operations"| MONGO
+    REALTIME ==>|"Store Chat<br/>Messages"| MONGO
+    OCR ==>|"Save Digitized<br/>Questions"| MONGO
+    OCR -.->|"External API<br/>Integration"| VISION
+    QUIZ ==>|"Analytics<br/>Data"| MONGO
+    API -.->|"Application<br/>Deployment"| CLOUD
     
-    GATEWAY --> AUTH
-    GATEWAY --> QUIZ
-    GATEWAY --> OCR
-    GATEWAY --> SOCIAL
-    GATEWAY --> CONTENT
+    %% Apply consistent styles to all components
+    class USERS userLayer
+    class WEB frontend
+    class API,REALTIME,OCR,QUIZ backend
+    class MONGO database
+    class CLOUD,VISION external
     
-    QUIZ --> ANALYTICS
-    OCR --> AI
-    SOCIAL --> NOTIF
-    CONTENT --> SEARCH
-    
-    AUTH --> MONGO
-    AUTH --> REDIS
-    QUIZ --> MONGO
-    QUIZ --> REDIS
-    ANALYTICS --> MONGO
-    ANALYTICS --> ELASTIC
-    OCR --> FILES
-    OCR --> MONGO
-    AI --> MONGO
-    SOCIAL --> REDIS
-    NOTIF --> REDIS
-    CONTENT --> MONGO
-    CONTENT --> ELASTIC
-    SEARCH --> ELASTIC
-    
-    GATEWAY --> PAYMENT
-    NOTIF --> EMAIL
-    NOTIF --> SMS
-    GATEWAY --> MONITOR
-    
-    %% Apply styles
-    class WEB,MOBILE presentation
-    class GATEWAY,LB gateway
-    class AUTH,QUIZ,OCR,SOCIAL,CONTENT,ANALYTICS,AI,NOTIF,SEARCH services
-    class MONGO,REDIS,FILES,ELASTIC data
+    %% Enhanced subgraph styling
+    class FRONTEND,BACKEND,DATABASE,EXTERNAL subgraphStyle
 ```
 
+---
+
+## 🔧 Core Features Implementation
+
+### 🎯 **1. Question Management System**
+- **Centralized Repository**: Organized by semester, subject, and chapter
+- **Search & Filter**: Quick access to relevant questions
+- **Categorization**: MCQs and fill-in-the-blank questions
+- **Version Control**: Track question updates and modifications
+
+### 📸 **2. OCR Integration**
+- **Image Upload**: Drag-and-drop interface for question papers
+- **Text Extraction**: Tesseract.js for client-side processing
+- **Google Vision API**: Enhanced accuracy for complex layouts
+- **Auto-formatting**: Convert extracted text to quiz-ready format
+
+### 🧠 **3. Adaptive Quiz Engine**
+- **Personalized Practice**: Questions based on performance history
+- **Timed Sessions**: Simulate real exam conditions
+- **Difficulty Adjustment**: Adaptive question selection
+- **Performance Analytics**: Track progress and identify weak areas
+
+### 💬 **4. Real-time Collaboration**
+- **Discussion Forums**: Chapter and question-specific threads
+- **Live Chat**: Instant doubt resolution
+- **Peer Learning**: Student-to-student knowledge sharing
+- **Moderated Environment**: Secure and focused discussions
+
+---
+
+## 🔐 Security Architecture
+
+```mermaid
+graph LR
+    A[Client Request] --> B[HTTPS/TLS]
+    B --> C[Rate Limiting]
+    C --> D[JWT Validation]
+    D --> E[Role-based Access]
+    E --> F[API Processing]
+    F --> G[Database Query]
+    G --> H[Response Encryption]
+    H --> I[Client Response]
+```
+
+### 🛡️ **Security Measures**
+- **Authentication**: JWT-based secure authentication
+- **Authorization**: Role-based access control (Student/Admin/Moderator)
+- **Data Encryption**: HTTPS for data transmission
+- **Input Validation**: Prevent injection attacks
+- **Rate Limiting**: Protect against abuse
+
+---
+
+</div>
