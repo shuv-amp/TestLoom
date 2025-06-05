@@ -27,3 +27,18 @@ sequenceDiagram
     Quiz Service->>Quiz Service: Calculate score
     Quiz Service->>Database: Update attempt with results
 ```
+## Endpoint Overview
+
+<div align="center">
+
+| 🎯 Endpoint            | 📱 Method | 🛡️ Auth Required     | 📝 Purpose              |
+|:-----------------------|:---------:|:--------------------:|:-------------------------|
+| `/api/quizzes`         | GET       | 🎫 Bearer Token      | Browse available quizzes |
+| `/api/quizzes/{id}`    | GET       | 🎫 Bearer Token      | Get quiz details         |
+| `/api/quiz/start`      | POST      | 🎫 Bearer Token      | Start new quiz session   |
+| `/api/quiz/submit`     | POST      | 🎫 Bearer Token      | Submit quiz answers      |
+| `/api/quiz/results/{id}` | GET       | 🎫 Bearer Token      | Get quiz results       |
+| `/api/quiz/progress`   | GET       | 🎫 Bearer Token      | User progress overview   |
+
+
+</div>
