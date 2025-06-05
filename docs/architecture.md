@@ -6,14 +6,7 @@ TestLoom follows a **3-tier architecture** ensuring scalability, security, and m
 
 ```mermaid
 graph TB
-    %% Enhanced styling with consistent colors, borders, and typography
-    classDef userLayer fill:#e8eaf6,stroke:#3f51b5,stroke-width:3px,color:#1a1a1a,font-weight:bold,font-size:12px
-    classDef frontend fill:#e3f2fd,stroke:#1976d2,stroke-width:3px,color:#1a1a1a,font-weight:bold,font-size:12px
-    classDef backend fill:#e8f5e8,stroke:#388e3c,stroke-width:3px,color:#1a1a1a,font-weight:bold,font-size:12px
-    classDef database fill:#fff3e0,stroke:#f57c00,stroke-width:3px,color:#1a1a1a,font-weight:bold,font-size:12px
-    classDef external fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#1a1a1a,font-weight:bold,font-size:12px
-    classDef subgraphStyle fill:#fafafa,stroke:#424242,stroke-width:2px,stroke-dasharray:5 5
-    
+
     %% User Layer
     USERS["👥 University Students<br/>━━━━━━━━━━━━━━━━━━━━━━━<br/>• Browse Questions by Subject/Chapter<br/>• Take Timed Practice Quizzes<br/>• Upload Question Papers (OCR)<br/>• Participate in Discussions"]
     
