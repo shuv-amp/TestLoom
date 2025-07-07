@@ -10,7 +10,7 @@
         <form @submit.prevent="handleSignup">
           <div class="mb-4">
             <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <input v-model="text" id="fullName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Niraj Ram" required>
+            <input v-model="name" id="fullName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Niraj Ram" required>
           </div>
           <div class="mb-4">
             <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
@@ -43,13 +43,14 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+const name = ref('')
 const email = ref('')
 const password = ref('')
 const cpassword =ref('')
 
 const router = useRouter()
 
-function handleSignup() {
+async function handleSignup() {
   if(password.value!==cpassword.value){
     alert('Password didnot Matched')
     return
@@ -58,6 +59,21 @@ function handleSignup() {
     alert('Please use a @student.ku.edu.np email address')
     return
   }
-  router.push('/dashboard')
+  try {
+    const res = await fetch('http://localhost:5000/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name.value, email: email.value, password: password.value })
+    })
+    const data = await res.json()
+    if (res.ok && data.data && data.data.token) {
+      localStorage.setItem('token', data.data.token)
+      router.push('/dashboard')
+    } else {
+      alert(data.message || 'Signup failed')
+    }
+  } catch (e) {
+    alert('Network error. Please try again.')
+  }
 }
 </script>
