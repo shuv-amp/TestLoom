@@ -21,16 +21,8 @@ const registerUser = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
-    // Validate required fields
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Name, email, and password are required'
-      });
-    }
-
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return res.status(409).json({
         success: false,
@@ -40,8 +32,8 @@ const registerUser = async (req, res) => {
 
     // Create new user
     const user = new User({
-      name,
-      email,
+      name: name.trim(),
+      email: email.toLowerCase(),
       password,
       role: role || 'student'
     });
@@ -93,16 +85,8 @@ const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate required fields
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email and password are required'
-      });
-    }
-
     // Find user and include password field
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -198,8 +182,111 @@ const getUserProfile = async (req, res) => {
   }
 };
 
+/**
+ * Update user profile
+ * @route PUT /api/auth/profile
+ * @access Private
+ */
+const updateProfile = async (req, res) => {
+  try {
+    const { name } = req.body;
+    const userId = req.user.userId;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { name: name.trim() },
+      { new: true, runValidators: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Update profile error:', error);
+    
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+/**
+ * Change user password
+ * @route PUT /api/auth/password
+ * @access Private
+ */
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.userId;
+
+    // Find user with password
+    const user = await User.findById(userId).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await user.comparePassword(currentPassword);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // Update password (will be hashed by pre-save middleware)
+    user.password = newPassword;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
-  getUserProfile
+  getUserProfile,
+  updateProfile,
+  changePassword
 };
