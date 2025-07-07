@@ -10,16 +10,16 @@
         <form @submit.prevent="handleLogin">
           <div class="mb-4">
             <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-            <input type="email" id="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="you@student.ku.edu.np" required>
+            <input v-model="email" id="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="you@student.ku.edu.np" required>
           </div>
           <div class="mb-6">
             <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <input type="password" id="password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••••••" required>
           </div>
           <div>
-            <NuxtLink to="/dashboard" class="block w-full text-center bg-blue-600 text-white py-2.5 rounded-md font-semibold hover:bg-blue-700 transition">
+            <button type="submit" class="block w-full text-center bg-blue-600 text-white py-2.5 rounded-md font-semibold hover:bg-blue-700 transition">
               Log In
-            </NuxtLink>
+            </button>
           </div>
         </form>
       </div>
@@ -30,3 +30,21 @@
     </div>
   </div>
 </template>
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const email = ref('')
+
+
+const router = useRouter()
+
+function handleLogin() {
+
+  if (!email.value.endsWith('@student.ku.edu.np')) {
+    alert('Please use a @student.ku.edu.np email address')
+    return
+  }
+  router.push('/dashboard')
+}
+</script>
