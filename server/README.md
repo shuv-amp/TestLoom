@@ -187,13 +187,3 @@ node test-auth.js
 - Set `NODE_ENV=production` for production deployments
 - Add rate limiting for production use
 
-## 🤝 Contributing
-
-1. Create feature branch from `main`
-2. Make changes following the existing code style
-3. Add tests for new functionality
-4. Submit pull request with descriptive commit messages
-
-## 📄 License
-
-This project is part of the TestLoom educational platform.
