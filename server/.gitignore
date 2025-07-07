@@ -11,6 +11,9 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# But keep example file
+!.env.example
+
 # Runtime data
 pids
 *.pid
