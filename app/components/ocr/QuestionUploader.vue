@@ -42,6 +42,7 @@
 
 <script>
 import { OCRService } from '@/services/ocr/ocrService';
+import { QuizService } from '@/services/quiz/quizService';
 
 export default {
   name: 'QuestionUploader',
@@ -51,7 +52,9 @@ export default {
       processing: false,
       progress: 0,
       results: null,
-      ocrService: new OCRService()
+      ocrService: new OCRService(),
+      quizService: new QuizService(),
+      generatedQuiz: null
     };
   },
   methods: {
@@ -83,9 +86,16 @@ export default {
         this.processing = false;
       }
     },
-    createQuiz() {
-      // TODO: Implement quiz creation logic
-      this.$emit('quiz-created', this.results.questions);
+    async createQuiz() {
+      try {
+        this.generatedQuiz = this.quizService.createQuizFromOCR(this.results);
+        await this.quizService.saveQuiz(this.generatedQuiz);
+        this.$emit('quiz-created', this.generatedQuiz);
+        this.$toast.success('Quiz created successfully!');
+      } catch (error) {
+        console.error('Error creating quiz:', error);
+        this.$toast.error('Failed to create quiz');
+      }
     }
   },
   beforeDestroy() {
