@@ -6,6 +6,7 @@ const connectDB = require('./config/database');
 // Import routes
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const ocrRoutes = require('./routes/ocrRoutes');
 
 // Initialize Express app
 const app = express();
@@ -41,6 +42,7 @@ app.get('/', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/ocr', ocrRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
