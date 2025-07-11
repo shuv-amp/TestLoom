@@ -1,18 +1,14 @@
-import { createWorker } from 'tesseract.js';
+const { createWorker } = require('tesseract.js');
 
-export class OCRService {
+class OCRService {
   constructor() {
     this.worker = null;
-    this.initializeWorker();
   }
 
   async initializeWorker() {
     try {
-      this.worker = await createWorker({
-        logger: (m) => console.log(m),
-      });
-      await this.worker.loadLanguage('eng');
-      await this.worker.initialize('eng');
+      this.worker = await createWorker();
+      await this.worker.initialize('eng'); // Only initialize, no load or loadLanguage
     } catch (error) {
       console.error('Failed to initialize OCR worker:', error);
       throw error;
@@ -24,7 +20,6 @@ export class OCRService {
       if (!this.worker) {
         await this.initializeWorker();
       }
-
       const { data: { text } } = await this.worker.recognize(file);
       return this.processText(text);
     } catch (error) {
@@ -34,11 +29,7 @@ export class OCRService {
   }
 
   processText(text) {
-    // Basic text processing to clean up OCR output
-    const cleanedText = text
-      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
-      .trim();
-
+    const cleanedText = text.replace(/\s+/g, ' ').trim();
     return {
       rawText: text,
       cleanedText,
@@ -47,17 +38,13 @@ export class OCRService {
   }
 
   extractQuestions(text) {
-    // Basic question extraction logic
     const questions = [];
     const lines = text.split('\n');
-
     lines.forEach(line => {
-      // Simple regex to detect questions (can be improved)
       if (line.match(/^[0-9]+\.\s+/) || line.match(/^[A-Z]\.\s+/)) {
         questions.push(line.trim());
       }
     });
-
     return questions;
   }
 
@@ -67,3 +54,5 @@ export class OCRService {
     }
   }
 }
+
+module.exports = { OCRService };

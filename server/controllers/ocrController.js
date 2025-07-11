@@ -1,4 +1,4 @@
-const { OCRService } = require('../../app/services/ocr/ocrService');
+const { OCRService } = require('../../app/services/ocr/ocrService.cjs');
 const multer = require('multer');
 const path = require('path');
 
