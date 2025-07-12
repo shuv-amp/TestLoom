@@ -1,1 +1,89 @@
+
+# Node
+node_modules/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS
 .DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Build
+/dist/
+/build/
+/.next/
+/.nuxt/
+
+# Test
+coverage/
+
+# Environment
+.env
+.env.*
+
+# Misc
+*.swp
+*.tmp
+*.bak
+*.pid
+*.seed
+*.tgz
+
+# Output
+*.out
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Mac
+__MACOSX/
+
+# Images
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+
+# Lock files
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Others
+*.cjs
+*.mjs
+
+# Server
+server/node_modules/
+
+# Ignore test artifacts
+*.test.js
+*.spec.js
+
+# Ignore generated files
+app/services/ocr/testOcrRunner.js
+app/services/ocr/testOcrRunner.cjs
+
+# Ignore database
+*.sqlite
+*.db
+
+# Ignore public assets
+app/public/
+
+# Ignore docs build
+/docs/build/
+
+
+# Tesseract OCR trained models
+*.traineddata
