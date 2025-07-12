@@ -20,6 +20,10 @@ pids
 *.seed
 *.pid.lock
 
+
+# Tesseract OCR trained models
+*.traineddata
+
 # Logs
 logs
 *.log
