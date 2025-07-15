@@ -1,0 +1,67 @@
+{
+  "name": "testloom",
+  "version": "1.0.0",
+  "description": "TestLoom - Centralized exam preparation platform",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:*",
+    "dev:frontend": "npm run --workspace=@testloom/frontend dev",
+    "dev:backend": "npm run --workspace=@testloom/backend dev",
+    "build": "npm run --workspace=@testloom/backend build && npm run --workspace=@testloom/frontend build",
+    "start": "npm-run-all --parallel start:*",
+    "start:frontend": "npm run --workspace=@testloom/frontend start",
+    "start:backend": "npm run --workspace=@testloom/backend start",
+    "test": "npm test --workspaces",
+    "test:e2e": "npx playwright test",
+    "lint": "npm run lint --workspaces",
+    "lint:fix": "npm run lint:fix --workspaces",
+    "format": "npx prettier --write .",
+    "docker:dev": "docker-compose -f docker/docker-compose.yml up --build",
+    "docker:prod": "docker-compose -f docker/docker-compose.prod.yml up --build",
+    "clean": "npm run clean --workspaces && rm -rf node_modules"
+  },
+  "keywords": [
+    "education",
+    "exam-preparation",
+    "quiz",
+    "student-collaboration",
+    "ocr",
+    "nuxt",
+    "express",
+    "mongodb"
+  ],
+  "author": "TestLoom Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@nuxtjs/tailwindcss": "^6.10.0",
+    "@playwright/test": "^1.40.0",
+    "@tailwindcss/postcss": "^4.1.11",
+    "autoprefixer": "^10.4.21",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.0.0",
+    "nodemon": "^3.1.10",
+    "npm-run-all": "^4.1.5",
+    "postcss": "^8.5.6",
+    "prettier": "^3.0.0",
+    "tailwindcss": "^3.4.3",
+    "youch": "^3.3.4"
+  },
+  "lint-staged": {
+    "*.{js,ts,vue,json,md}": [
+      "npx prettier --write",
+      "git add"
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "eslint": "9.31.0",
+    "jest": "30.0.4",
+    "supertest": "7.1.3"
+  }
+}

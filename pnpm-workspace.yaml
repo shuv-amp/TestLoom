@@ -1,0 +1,9 @@
+packages:
+  - packages/*
+  - scripts
+  - tests
+  - docs
+  - content
+
+onlyBuiltDependencies:
+  - better-sqlite3

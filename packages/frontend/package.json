@@ -1,5 +1,7 @@
 {
-  "name": "nuxt-app",
+  "name": "@testloom/frontend",
+  "version": "1.0.0",
+  "description": "TestLoom Frontend - Nuxt 3 Application",
   "private": true,
   "type": "module",
   "scripts": {
@@ -7,7 +9,12 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "postinstall": "mkdir -p .data/content && pnpm approve-builds --yes || true"
   },
   "dependencies": {
     "@nuxt/content": "3.6.1",
@@ -25,5 +32,13 @@
     "typescript": "^5.8.3",
     "vue": "^3.5.17",
     "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.11",
+    "@vitest/ui": "^1.0.0",
+    "@vue/test-utils": "^2.4.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.11",
+    "vitest": "^1.0.0"
   }
 }

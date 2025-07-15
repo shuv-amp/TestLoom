@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "vue.volar",
+    "bradlc.vscode-tailwindcss",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "ms-vscode.vscode-typescript-next",
+    "ms-playwright.playwright",
+    "ms-vscode.vscode-json",
+    "redhat.vscode-yaml"
+  ]
+}
