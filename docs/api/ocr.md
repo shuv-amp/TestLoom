@@ -1,354 +1,329 @@
-# <div align="center">📸 OCR API Reference</div>
+# 📷 TestLoom OCR Implementation
 
-<div align="center">
+## Overview
 
-**Transform Images into Interactive Learning Content**
+This document describes the complete OCR (Optical Character Recognition) implementation for TestLoom, which allows users to upload images of exam papers and automatically extract, parse, and structure questions.
 
-*Complete API endpoints for intelligent document processing and question extraction*
+## 🏗️ Architecture
 
----
-
-![OCR](https://img.shields.io/badge/OCR-Tesseract%20%2B%20Vision-4285F4?style=for-the-badge&logo=google&logoColor=white)
-![AI](https://img.shields.io/badge/AI-Processing-success?style=for-the-badge&logo=tensorflow&logoColor=white)
-![Upload](https://img.shields.io/badge/Upload-Multi%20Format-orange?style=for-the-badge&logo=upload&logoColor=white)
-
-</div>
-
----
-
-## 🌟 API Overview
-
-TestLoom's OCR API converts **physical study materials into digital quiz content** through intelligent image processing. Upload exam papers, notes, or textbooks and receive structured, quiz-ready questions.
-
-### 🎯 **Processing Pipeline**
-
-<table>
-<tr>
-<td width="25%" align="center">
-
-### 📤 **Upload**
-Send images in multiple formats with smart validation
-
-</td>
-<td width="25%" align="center">
-
-### 🔍 **Process**
-AI-powered text extraction and question detection
-
-</td>
-<td width="25%" align="center">
-
-### ✅ **Validate**
-Quality scoring and manual review queue
-
-</td>
-<td width="25%" align="center">
-
-### 💾 **Store**
-Structured storage ready for quiz generation
-
-</td>
-</tr>
-</table>
-
----
-
-## 🚀 Endpoint Overview
-
-<div align="center">
-
-| 🎯 **Endpoint** | 📱 **Method** | 🛡️ **Auth Required** | 📝 **Purpose** | ⚡ **Max Size** |
-|:----------------|:--------------|:---------------------|:----------------|:----------------|
-| `/api/ocr/upload` | POST | 🎫 Bearer Token | Upload document images | 10MB |
-| `/api/ocr/status/{id}` | GET | 🎫 Bearer Token | Check processing status | - |
-| `/api/ocr/result/{id}` | GET | 🎫 Bearer Token | Get extracted content | - |
-| `/api/ocr/validate/{id}` | POST | 🎫 Bearer Token | Approve/edit questions | - |
-| `/api/ocr/history` | GET | 🎫 Bearer Token | View upload history | - |
-
-</div>
-
----
-
-## 📤 Document Upload
-
-### `POST /api/ocr/upload`
-
-Upload and process document images for question extraction.
-
-<div align="center">
-
-```mermaid
-sequenceDiagram
-    participant Student as 👤 Student
-    participant API as 📸 OCR API
-    participant Storage as 💾 Storage
-    participant AI as 🤖 AI Engine
-    participant Queue as 📋 Review Queue
-
-    Student->>API: POST /api/ocr/upload
-    API->>Storage: Store image files
-    API->>AI: Process with OCR
-    AI->>AI: Extract & parse questions
-    AI->>Queue: Add to review queue
-    API-->>Student: 202 Processing started
+```
+                               ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+                               │   Frontend      │───▶│   OCR Service    │───▶│   Database      │
+                               │  (File Upload)  │    │  (Tesseract.js)  │    │   (MongoDB)     │
+                               └─────────────────┘    └──────────────────┘    └─────────────────┘
+                                                               │
+                                                               ▼
+                                                       ┌──────────────────┐
+                                                       │ Question Parser  │
+                                                       │ (Pattern Match)  │
+                                                       └──────────────────┘
 ```
 
-</div>
+## 📁 File Structure
 
-#### 📋 **Request Format**
-
-```http
-POST /api/ocr/upload
-Authorization: Bearer fdsfdsFDSFDSFds...
-Content-Type: multipart/form-data
-
-files: [image1.jpg, image2.png]
-subject: "Data Structure and Algorithms"
-chapter: "Stack"
-difficulty: "medium"
-notes: "Past exam questions from 2022"
+```
+packages/backend/src/
+├── controllers/
+│   ├── ocrController.js         # OCR upload & processing
+│   └── questionController.js    # Question CRUD operations
+├── models/
+│   └── questionModel.js         # MongoDB question schema
+├── routes/
+│   ├── ocrRoutes.js            # OCR API endpoints
+│   └── questionRoutes.js       # Question API endpoints
+├── services/
+│   ├── ocrService.js           # Core OCR processing logic
+│   └── questionService.js      # Question utilities & analytics
+└── db/
+    ├── init.js                 # Database initialization
+    ├── migrations/
+    │   └── createQuestionIndexes.js
+    └── seeds/
+        └── sampleQuestions.js
 ```
 
-#### ✅ **Success Response**
+## 🔧 Implementation Details
 
-```http
-HTTP/1.1 202 Accepted
-Content-Type: application/json
+### 1. OCR Service (`src/services/ocrService.js`)
 
-{
-  "success": true,
-  "message": "Upload started successfully",
-  "data": {
-    "uploadId": "ocr_abc123456",
-    "status": "processing",
-    "filesCount": 2,
-    "estimatedTime": "2-5 minutes",
-    "subject": "Data Structure and Algorithms",
-    "chapter": "Stack"
-    "createdAt": "2025-05-05T11:30:00Z"
-  }
-}
+**Core Features:**
+- Text extraction using Tesseract.js
+- Advanced question parsing with regex patterns
+- Support for MCQ, Fill-in-the-blank, and Descriptive questions
+- Confidence scoring and duplicate detection
+- Text cleaning and normalization
+
+**Key Methods:**
+```javascript
+extractTextFromImage(imageBuffer)    // Extract raw text from image
+parseQuestions(rawText)              // Parse structured questions
+parseQuestionContent(content, id)    // Identify question types
+calculateConfidence(content, options) // Quality assessment
 ```
 
-#### 🚨 **Error Responses**
+### 2. Question Model (`src/models/questionModel.js`)
 
-<table>
-<tr>
-<td width="30%">
+**Schema Features:**
+- Flexible question types (MCQ, FIB, DESCRIPTIVE)
+- Embedded options and blanks
+- Subject/chapter categorization
+- OCR metadata tracking
+- Verification workflow support
 
-**400 Bad Request**
-```json
-{
-  "success": false,
-  "error": "INVALID_FILE_TYPE",
-  "message": "Only JPG, PNG, PDF allowed",
-  "supportedTypes": ["jpg", "png", "pdf"]
-}
+**Validation:**
+- MCQ must have 2-5 options with exactly one correct answer
+- FIB must have at least one blank
+- Required metadata (subject, created by)
+
+### 3. API Endpoints
+
+#### OCR Processing
+- `POST /api/ocr/upload` - Upload and process image
+- File validation (type, size)
+- Automatic cleanup after processing
+
+#### Question Management
+- `POST /api/questions/finalize` - Save verified questions
+- `GET /api/questions` - Retrieve with filtering/pagination
+- `GET /api/questions/statistics` - Analytics dashboard
+- `GET /api/questions/search` - Text-based search
+- `PUT /api/questions/:id` - Update question
+- `DELETE /api/questions/:id` - Remove question
+
+## 🚀 Getting Started
+
+### Prerequisites
+```bash
+# Required dependencies already installed:
+# - tesseract.js (OCR engine)
+# - multer (file uploads)
+# - mongoose (MongoDB ODM)
 ```
 
-</td>
-<td width="30%">
+### Database Setup
+```bash
+# Initialize database with indexes and sample data
+npm run db:init
 
-**413 Payload Too Large**
-```json
-{
-  "success": false,
-  "error": "FILE_TOO_LARGE",
-  "message": "File exceeds 10MB limit",
-  "maxSize": "10MB"
-}
+# Or run separately:
+npm run db:indexes  # Create performance indexes
+npm run seed       # Add sample questions
 ```
 
-</td>
-<td width="30%">
+### Usage Example
 
-**429 Too Many Requests**
-```json
-{
-  "success": false,
-  "error": "RATE_LIMIT",
-  "message": "Too many uploads",
-  "retryAfter": 300
-}
+#### 1. Upload Image for OCR
+```javascript
+const formData = new FormData();
+formData.append('image', imageFile);
+
+const response = await fetch('/api/ocr/upload', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${token}`
+  },
+  body: formData
+});
+
+const result = await response.json();
+// result.data.questions contains parsed questions for review
 ```
 
-</td>
-</tr>
-</table>
-
----
-
-## 🔍 Processing Status
-
-### `GET /api/ocr/status/{uploadId}`
-
-Check the current processing status of uploaded documents.
-
-#### 📋 **Request Format**
-
-```http
-GET /api/ocr/status/ocr_abc123def456
-Authorization: Bearer fdsfdsFDSFDSFds...
-```
-
-#### ✅ **Success Response**
-
-```http
-HTTP/1.1 200 OK
-Content-Type: application/json
-
-{
-  "success": true,
-  "data": {
-    "uploadId": "ocr_abc123456",
-    "status": "completed",
-    "progress": 100,
-    "processedFiles": 2,
-    "totalFiles": 2,
-    "extractedQuestions": 15,
-    "confidence": {
-      "high": 12,
-      "medium": 2,
-      "low": 1
-    },
-    "processingTime": "3m 24s",
-    "completedAt": "2025-05-05T11:32:24Z"
-  }
-}
-```
-
-#### 📊 **Status Values**
-
-<div align="center">
-
-| 🎯 **Status** | 📝 **Description** | ⏰ **Typical Duration** | 🎨 **Progress Color** |
-|:--------------|:-------------------|:------------------------|:----------------------|
-| `queued` | Waiting in processing queue | 0-30 seconds | 🟡 Yellow |
-| `processing` | AI extracting text & questions | 1-5 minutes | 🔵 Blue |
-| `completed` | Processing finished successfully | - | 🟢 Green |
-| `failed` | Processing failed | - | 🔴 Red |
-| `review` | Awaiting manual review | Variable | 🟠 Orange |
-
-</div>
-
----
-
-## 📄 Extraction Results
-
-### `GET /api/ocr/result/{uploadId}`
-
-Retrieve extracted questions and content from processed documents.
-
-#### ✅ **Success Response**
-
-```http
-HTTP/1.1 200 OK
-Content-Type: application/json
-
-{
-  "success": true,
-  "data": {
-    "uploadId": "ocr_abc123def456",
-    "extractedQuestions": [
-      {
-        "id": "q_001",
-        "type": "multiple_choice",
-        "question": "What is the time complexity of binary search?",
-        "options": [
-          "O(n)",
-          "O(log n)",
-          "O(n log n)",
-          "O(1)"
-        ],
-        "correctAnswer": 1,
-        "confidence": 95,
-        "source": {
-          "file": "image1.jpg",
-          "page": 1,
-          "coordinates": [120, 340, 580, 420]
-        }
-      },
-      {
-        "id": "q_002",
-        "type": "fill_in_blank",
-        "question": "A _______ is a data structure that follows LIFO principle.",
-        "answer": "stack",
-        "confidence": 88,
-        "source": {
-          "file": "image1.jpg",
-          "page": 1,
-          "coordinates": [120, 450, 580, 480]
-        }
-      }
-    ],
-    "metadata": {
-      "subject": "Data Structure and Algorithms",
-      "chapter": "Stack",
-      "difficulty": "medium",
-      "totalQuestions": 15,
-      "averageConfidence": 91
+#### 2. Finalize Verified Questions
+```javascript
+const payload = {
+  questions: [
+    {
+      questionText: "What is the capital of Nepal?",
+      questionType: "MCQ",
+      options: [
+        { label: "A", text: "Kathmandu", isCorrect: true },
+        { label: "B", text: "Pokhara", isCorrect: false }
+      ],
+      confidence: 0.9
     }
+  ],
+  metadata: {
+    subject: "Geography",
+    chapter: "Asian Countries",
+    semester: "First"
   }
+};
+
+const response = await fetch('/api/questions/finalize', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(payload)
+});
+```
+
+## 🧠 Question Parsing Logic
+
+### Pattern Recognition
+The parser uses multiple strategies to identify questions:
+
+1. **Numbered Questions**: `1.`, `Q1.`, `Question 1:`
+2. **MCQ Detection**: Options labeled A-E with various formats
+3. **Fill-in-the-blank**: `_____`, `[...]`, `(...)`
+4. **Answer Detection**: Keywords like "Answer: A"
+
+### Confidence Scoring
+```javascript
+// Factors affecting confidence:
+- Number of options (MCQ): +0.2 for ≥3 options
+- Question indicators: +0.1 for question words/marks
+- Detected answers: +0.1 for found correct answers
+- Pattern consistency: +0.1 for clear formatting
+```
+
+### Quality Assurance
+- Duplicate detection using Levenshtein distance
+- Minimum text length requirements
+- Format validation before database insertion
+
+## 📊 Database Schema
+
+### Question Document
+```javascript
+{
+  _id: ObjectId,
+  questionText: String,        // Main question content
+  questionType: "MCQ|FIB|DESCRIPTIVE",
+  
+  // MCQ specific
+  options: [{
+    label: "A|B|C|D|E",
+    text: String,
+    isCorrect: Boolean
+  }],
+  
+  // FIB specific  
+  blanks: [{
+    position: Number,
+    answer: String,
+    placeholder: String
+  }],
+  
+  // Metadata
+  subject: String,
+  chapter: String,
+  semester: String,
+  difficulty: "easy|medium|hard",
+  tags: [String],
+  
+  // Tracking
+  createdBy: ObjectId,
+  isVerified: Boolean,
+  source: "ocr|manual|import",
+  
+  // OCR specific
+  ocrMetadata: {
+    originalFileName: String,
+    confidence: Number,
+    processedAt: Date
+  },
+  
+  timestamps: { createdAt, updatedAt }
 }
 ```
 
----
+### Database Indexes
+```javascript
+// Performance indexes
+{ subject: 1, chapter: 1, questionType: 1 }
+{ createdBy: 1, createdAt: -1 }
+{ tags: 1 }
+{ isVerified: 1 }
+{ 'ocrMetadata.confidence': -1 }
+```
 
-## ✅ Question Validation
+## 🔒 Security & Validation
 
-### `POST /api/ocr/validate/{uploadId}`
+### File Upload Security
+- Type validation (JPEG, PNG, BMP, TIFF only)
+- Size limits (10MB maximum)
+- Automatic file cleanup after processing
+- No file storage on server
 
-Review and approve extracted questions before adding to question bank.
+### Authentication
+- JWT required for all endpoints
+- User-based question ownership
+- Admin role for global access
 
----
+### Input Validation
+- Zod schemas for request validation
+- MongoDB schema validation
+- XSS protection through input sanitization
 
-## 📚 Upload History
+## 📈 Performance Optimizations
 
-### `GET /api/ocr/history`
+### OCR Processing
+- Single Tesseract worker instance (reused)
+- Progress logging for long-running operations
+- Error handling with graceful fallbacks
 
-View all previous OCR uploads and their processing status.
+### Database
+- Compound indexes for common query patterns
+- Pagination for large result sets
+- Aggregation pipelines for analytics
 
----
+### API Design
+- RESTful endpoints with clear semantics
+- Structured error responses
+- Comprehensive logging
 
-## 📋 Supported Formats
+## 🧪 Testing Strategy
 
-<div align="center">
+### Unit Tests (Recommended)
+```javascript
+// OCR Service
+describe('OCR Service', () => {
+  test('should extract text from valid image');
+  test('should parse MCQ questions correctly');
+  test('should handle malformed input gracefully');
+});
 
-| 📄 **Format** | 📏 **Max Size** | 🎯 **Best For** | ✅ **Quality Tips** |
-|:--------------|:----------------|:----------------|:-------------------|
-| **JPG/JPEG** | 10MB | Photos of pages | Good lighting, minimal shadows |
-| **PNG** | 10MB | Screenshots, diagrams | High contrast, clear text |
-| **PDF** | 10MB | Scanned documents | 300+ DPI resolution |
-| **TIFF** | 10MB | High-quality scans | Professional scanning |
+// Question Controller  
+describe('Question Controller', () => {
+  test('should save valid questions');
+  test('should reject invalid question data');
+  test('should enforce user permissions');
+});
+```
 
-</div>
+### Integration Tests
+- File upload workflows
+- Database persistence
+- Authentication flows
 
-### 🎯 **Image Quality Guidelines**
-<div align="center">
-<table>
-<tr>
-<td width="50%">
+## 🚨 Error Handling
 
-#### ✅ **Best Practices**
-- 📐 **Resolution**: 300+ DPI for text
-- 💡 **Lighting**: Even, bright lighting
-- 📏 **Orientation**: Straight, not rotated
-- 🔍 **Focus**: Sharp, clear text
-- 📱 **Distance**: Fill frame with content
+### OCR Errors
+- Image processing failures
+- Text extraction timeouts
+- Pattern matching failures
 
-</td>
-<td width="50%">
+### Database Errors
+- Validation failures
+- Duplicate detection
+- Connection issues
 
-#### ❌ **Avoid These**
-- 🌑 **Shadows**: Dark areas over text
-- 📐 **Rotation**: Tilted or skewed images
-- 🔍 **Blur**: Out of focus text
-- ✋ **Hands**: Fingers covering content
-- 🌅 **Glare**: Reflective surfaces
+### File Upload Errors
+- Invalid file types
+- Size limit exceeded
+- Missing files
 
-</td>
-</tr>
-</table>
-</div>
+## 📚 Usage Examples
 
-
+### Complete Workflow
+```javascript
+// 1. User uploads exam paper image
+// 2. OCR processes and returns structured data
+// 3. User reviews and edits questions in UI
+// 4. Frontend sends verified data to finalize endpoint
+// 5. Questions saved to database with metadata
+// 6. Available for quiz generation and practice
+```
