@@ -1,4 +1,5 @@
 const Question = require('../models/questionModel');
+const { getQuestionStatistics, getRecentQuestions, searchQuestions } = require('../services/questionService');
 
 const finalizeQuestions = async (req, res) => {
   try {
@@ -255,9 +256,72 @@ const deleteQuestion = async (req, res) => {
   }
 };
 
+const getStatistics = async (req, res) => {
+  try {
+    const userId = req.user.role === 'admin' ? null : req.user.id;
+    const stats = await getQuestionStatistics(userId);
+    const recentQuestions = await getRecentQuestions(5, userId);
+
+    res.json({
+      success: true,
+      data: {
+        statistics: stats,
+        recentQuestions: recentQuestions
+      }
+    });
+  } catch (error) {
+    console.error('Get statistics error:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch statistics',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
+const searchQuestionsByTerm = async (req, res) => {
+  try {
+    const { q, subject, questionType, difficulty } = req.query;
+    
+    if (!q || q.trim().length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: 'Search term must be at least 2 characters long'
+      });
+    }
+
+    const filters = {};
+    if (subject) filters.subject = { $regex: subject, $options: 'i' };
+    if (questionType) filters.questionType = questionType;
+    if (difficulty) filters.difficulty = difficulty;
+
+    const questions = await searchQuestions(q.trim(), filters);
+
+    res.json({
+      success: true,
+      data: {
+        questions,
+        searchTerm: q.trim(),
+        totalResults: questions.length
+      }
+    });
+  } catch (error) {
+    console.error('Search questions error:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Failed to search questions',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
 module.exports = {
   finalizeQuestions,
   getQuestions,
   updateQuestion,
-  deleteQuestion
+  deleteQuestion,
+  getStatistics,
+  searchQuestionsByTerm
 };

@@ -13,7 +13,9 @@
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "migrate": "node src/db/migrations/run.js",
-    "seed": "node src/db/seeds/run.js"
+    "seed": "node src/db/seeds/run.js",
+    "db:init": "node src/db/init.js",
+    "db:indexes": "node src/db/migrations/createQuestionIndexes.js"
   },
   "keywords": [
     "express",
