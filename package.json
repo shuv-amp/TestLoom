@@ -1,0 +1,29 @@
+{
+  "name": "testloom-monorepo",
+  "version": "1.0.0",
+  "description": "TestLoom - Centralized exam preparation platform",
+  "private": true,
+  "workspaces": [
+    "app/frontend",
+    "app/backend"
+  ],
+  "scripts": {
+    "install:all": "npm install && npm run install:frontend && npm run install:backend",
+    "install:frontend": "cd app/frontend && npm install",
+    "install:backend": "cd app/backend && npm install",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd app/frontend && npm run dev",
+    "dev:backend": "cd app/backend && npm run dev",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd app/frontend && npm run build",
+    "build:backend": "cd app/backend && npm run build",
+    "start": "concurrently \"npm run start:frontend\" \"npm run start:backend\"",
+    "start:frontend": "cd app/frontend && npm run preview",
+    "start:backend": "cd app/backend && npm start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "author": "TestLoom Team",
+  "license": "MIT"
+}

@@ -11,10 +11,64 @@
 
 **Transform your exam preparation with intelligent OCR technology, adaptive learning algorithms, and collaborative study environments.**
 
-
 </div>
 
 ---
+
+## 🏗️ Monorepo Architecture
+
+### Directory Structure
+
+```
+TestLoom/
+├── app/                          # Main application directory
+│   ├── frontend/                 # Nuxt.js frontend application
+│   │   ├── assets/              # Static assets (CSS, images)
+│   │   ├── components/          # Vue.js components
+│   │   ├── pages/               # Nuxt.js pages (auto-routing)
+│   │   ├── public/              # Public static files
+│   │   ├── services/            # Frontend service layers
+│   │   ├── package.json         # Frontend dependencies
+│   │   └── nuxt.config.ts       # Nuxt.js configuration
+│   ├── backend/                 # Node.js/Express.js backend
+│   │   ├── config/              # Database and app configuration
+│   │   ├── controllers/         # Route controllers
+│   │   ├── middleware/          # Express middleware
+│   │   ├── models/              # Database models
+│   │   ├── routes/              # API route definitions
+│   │   ├── services/            # Backend business logic
+│   │   ├── package.json         # Backend dependencies
+│   │   └── index.js             # Main server entry point
+│   └── shared/                  # Shared code between frontend/backend
+│       ├── types/               # TypeScript type definitions
+│       └── utils/               # Shared utility functions
+├── docs/                        # Project documentation
+├── scripts/                     # Build and deployment scripts
+├── package.json                 # Root workspace configuration
+└── README.md                    # Project overview
+```
+
+### Directory Purpose
+
+- **app/frontend**: Nuxt.js application handling the user interface and client-side logic
+- **app/backend**: Express.js API server managing authentication, database operations, and OCR processing
+- **app/shared**: Common types, interfaces, and utilities shared between frontend and backend
+- **docs**: Comprehensive project documentation including API specs and architecture diagrams
+- **scripts**: Automation scripts for development, building, and deployment
+- **Root**: Workspace configuration and project-level documentation
+
+### Quick Start
+
+```bash
+# Install all dependencies
+npm run install:all
+
+# Start development servers
+npm run dev
+
+# Build for production
+npm run build
+```
 
 ## 🌟 About TestLoom
 
