@@ -1,11 +1,24 @@
 const express = require('express');
-const multer = require('multer');
-const { processImage } = require('../controllers/ocrController');
+const { ocrController, upload } = require('../controllers/ocrController');
+const auth = require('../middleware/auth');
 
 const router = express.Router();
-const upload = multer();
 
-// OCR processing route
-router.post('/process', upload.single('image'), processImage);
+router.post('/process-image', 
+  auth, 
+  upload.single('image'), 
+  ocrController.processImage
+);
+
+router.post('/process-batch', 
+  auth, 
+  upload.array('images', 5), 
+  ocrController.processBatchImages
+);
+
+router.post('/process-text', 
+  auth, 
+  ocrController.processTextInput
+);
 
 module.exports = router;

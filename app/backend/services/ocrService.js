@@ -41,14 +41,14 @@ class OCRQuestionParser {
   }
 
   splitIntoQuestionBlocks(text) {
-    const questionPattern = /(?=^\s*\d+\.?\s+)/gm;
+    const questionPattern = /(?=\d+\.?\s+)/g;
     const blocks = text.split(questionPattern).filter(block => block.trim().length > 0);
     
     return blocks.map(block => block.trim());
   }
 
   parseQuestionBlock(block) {
-    const questionNumberPattern = /^(\d+)\.?\s+(.+?)(?=\n\s*[A-E]\)|\n\s*\([A-E]\)|\n\s*[A-E]\.|\n\s*[A-E]\s+)/s;
+    const questionNumberPattern = /^(\d+)\.?\s+(.+?)(?=\s*[A-E][\)\.\s]|\s*\([A-E]\))/s;
     const match = block.match(questionNumberPattern);
 
     if (!match) {
@@ -74,37 +74,40 @@ class OCRQuestionParser {
 
   parseOptions(optionsText) {
     const patterns = [
-      /([A-E])\)\s*(.+?)(?=\n\s*[A-E]\)|\n\s*$|$)/gs,
-      /\(([A-E])\)\s*(.+?)(?=\n\s*\([A-E]\)|\n\s*$|$)/gs,
-      /([A-E])[\.\s]+(.+?)(?=\n\s*[A-E][\.\s]|\n\s*$|$)/gs,
-      /([A-E])\s+(.+?)(?=\n\s*[A-E]\s|\n\s*$|$)/gs
+      /([A-E])\)\s*(.+?)(?=\s+[A-E]\)|$)/g,
+      /\(([A-E])\)\s*(.+?)(?=\s+\([A-E]\)|$)/g,
+      /([A-E])[\.\s]+(.+?)(?=\s+[A-E][\.\s]|$)/g,
+      /([A-E])\s+(.+?)(?=\s+[A-E]\s|$)/g
     ];
 
     const options = {};
+    let bestMatch = {};
 
     for (const pattern of patterns) {
       const matches = [...optionsText.matchAll(pattern)];
+      const tempOptions = {};
       
-      if (matches.length > 0) {
-        for (const match of matches) {
-          const optionLetter = match[1].toUpperCase();
-          const optionText = match[2]
-            .trim()
-            .replace(/\n/g, ' ')
-            .replace(/\s+/g, ' ');
-          
-          if (optionText && !options[optionLetter]) {
-            options[optionLetter] = optionText;
-          }
-        }
+      for (const match of matches) {
+        const optionLetter = match[1].toUpperCase();
+        const optionText = match[2]
+          .trim()
+          .replace(/\n/g, ' ')
+          .replace(/\s+/g, ' ')
+          .replace(/\s*[A-E]\).*$/, '')
+          .replace(/\s*\([A-E]\).*$/, '')
+          .trim();
         
-        if (Object.keys(options).length > 0) {
-          break;
+        if (optionText && optionText.length > 0) {
+          tempOptions[optionLetter] = optionText;
         }
+      }
+      
+      if (Object.keys(tempOptions).length > Object.keys(bestMatch).length) {
+        bestMatch = tempOptions;
       }
     }
 
-    return options;
+    return bestMatch;
   }
 
   async processImageToQuestions(imagePath, options = {}) {
