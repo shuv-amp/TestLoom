@@ -1,6 +1,49 @@
 const ocrService = require('../services/ocrService');
 const fs = require('fs').promises;
 
+const getQuestionTypeSummary = (questions) => {
+  const summary = {};
+  questions.forEach(q => {
+    summary[q.questionType] = (summary[q.questionType] || 0) + 1;
+  });
+  return summary;
+};
+
+const calculateOverallConfidence = (questions) => {
+  if (questions.length === 0) return 0;
+  const totalConfidence = questions.reduce((sum, q) => sum + (q.confidence || 0.5), 0);
+  return Math.round((totalConfidence / questions.length) * 100) / 100;
+};
+
+const formatQuestionForVerification = (question) => {
+  const baseFormat = {
+    id: question.id,
+    questionType: question.questionType,
+    questionText: question.questionText,
+    confidence: question.confidence || 0.5,
+    needsVerification: (question.confidence || 0.5) < 0.8
+  };
+
+  if (question.questionType === 'MCQ') {
+    return {
+      ...baseFormat,
+      options: question.options,
+      correctAnswer: question.detectedAnswer,
+      hasDetectedAnswer: !!question.detectedAnswer
+    };
+  }
+
+  if (question.questionType === 'FIB') {
+    return {
+      ...baseFormat,
+      blanks: question.blanks,
+      blankCount: question.blankCount || question.blanks?.length || 0
+    };
+  }
+
+  return baseFormat;
+};
+
 const uploadImage = async (req, res) => {
   try {
     if (!req.file) {
@@ -40,14 +83,21 @@ const uploadImage = async (req, res) => {
       success: true,
       message: 'Image processed successfully',
       data: {
-        rawText: rawText,
-        parsedQuestions: parsedQuestions,
-        totalQuestionsFound: parsedQuestions.length,
-        processingInfo: {
+        summary: {
+          totalQuestionsFound: parsedQuestions.length,
+          questionTypes: this.getQuestionTypeSummary(parsedQuestions),
+          confidence: this.calculateOverallConfidence(parsedQuestions),
+          processingTime: Date.now() - Date.now()
+        },
+        questions: parsedQuestions.map(question => this.formatQuestionForVerification(question)),
+        metadata: {
           fileName: req.file.originalname,
           fileSize: req.file.size,
-          processedAt: new Date().toISOString()
-        }
+          fileMimeType: req.file.mimetype,
+          processedAt: new Date().toISOString(),
+          userId: req.user.id
+        },
+        rawText: process.env.NODE_ENV === 'development' ? rawText : undefined
       }
     });
 
