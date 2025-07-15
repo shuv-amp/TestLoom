@@ -320,14 +320,3 @@ mindmap
       💪 Goal Setting
 ```
 
----
-
-<div align="center">
-
-### ⚡ **Learning Never Sleeps**
-
-*TestLoom's real-time collaboration creates a 24/7 learning environment where students support each other, share knowledge, and grow together. Because the best learning happens when we learn together.*
-
----
-
-</div>
