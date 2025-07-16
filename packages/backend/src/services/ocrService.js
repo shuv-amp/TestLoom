@@ -8,19 +8,16 @@ class OCRService {
   async initialize() {
     if (!this.worker) {
       this.worker = await createWorker();
-      await this.worker.loadLanguage('eng');
-      await this.worker.initialize('eng');
+      // No need for initialize or loadLanguage in latest Tesseract.js
     }
   }
 
   async extractTextFromImage(imageBuffer) {
     try {
       await this.initialize();
-      
       const { data: { text } } = await this.worker.recognize(imageBuffer, {
-        logger: m => console.log(`OCR Progress: ${m.status} - ${Math.round(m.progress * 100)}%`)
+        lang: 'eng'
       });
-
       return text;
     } catch (error) {
       console.error('OCR extraction error:', error);

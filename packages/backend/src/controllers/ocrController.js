@@ -85,11 +85,11 @@ const uploadImage = async (req, res) => {
       data: {
         summary: {
           totalQuestionsFound: parsedQuestions.length,
-          questionTypes: this.getQuestionTypeSummary(parsedQuestions),
-          confidence: this.calculateOverallConfidence(parsedQuestions),
+          questionTypes: getQuestionTypeSummary(parsedQuestions),
+          confidence: calculateOverallConfidence(parsedQuestions),
           processingTime: Date.now() - Date.now()
         },
-        questions: parsedQuestions.map(question => this.formatQuestionForVerification(question)),
+        questions: parsedQuestions.map(question => formatQuestionForVerification(question)),
         metadata: {
           fileName: req.file.originalname,
           fileSize: req.file.size,
