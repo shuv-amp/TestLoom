@@ -16,32 +16,19 @@ const calculateOverallConfidence = (questions) => {
 };
 
 const formatQuestionForVerification = (question) => {
-  const baseFormat = {
+  // Only include id, questionText, and options for MCQ
+  if (question.options) {
+    return {
+      id: question.id,
+      questionText: question.questionText,
+      options: Array.isArray(question.options) ? question.options.map(opt => ({ label: opt.label, text: opt.text })) : []
+    };
+  }
+  // For other types, only id and questionText
+  return {
     id: question.id,
-    questionType: question.questionType,
-    questionText: question.questionText,
-    confidence: question.confidence || 0.5,
-    needsVerification: (question.confidence || 0.5) < 0.8
+    questionText: question.questionText
   };
-
-  if (question.questionType === 'MCQ') {
-    return {
-      ...baseFormat,
-      options: question.options,
-      correctAnswer: question.detectedAnswer,
-      hasDetectedAnswer: !!question.detectedAnswer
-    };
-  }
-
-  if (question.questionType === 'FIB') {
-    return {
-      ...baseFormat,
-      blanks: question.blanks,
-      blankCount: question.blankCount || question.blanks?.length || 0
-    };
-  }
-
-  return baseFormat;
 };
 
 const uploadImage = async (req, res) => {

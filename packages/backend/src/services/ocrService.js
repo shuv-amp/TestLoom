@@ -30,54 +30,50 @@ class OCRService {
       return [];
     }
 
-    const cleanText = rawText
-      .replace(/\s+/g, ' ')
-      .replace(/\n+/g, '\n')
-      .replace(/[""'']/g, '"')
-      .replace(/[–—]/g, '-')
-      .trim();
+    // Remove headers and useless lines
+    const lines = rawText.split('\n').map(line => line.trim());
+    const filteredLines = lines.filter(line => {
+      // Discard lines that are headers, page numbers, or contain only underscores
+      if (/^_{2,}/.test(line)) return false;
+      if (/^TOP|MCQ|Computer|Page \d+/i.test(line)) return false;
+      if (line.length < 8) return false;
+      return true;
+    });
+    const cleanText = filteredLines.join('\n');
 
-    const questionPatterns = [
-      /(?:^|\n)\s*(\d+[\.\)])\s*(.+?)(?=\n\s*\d+[\.\)]|\n\s*[A-Z][\.\)]|$)/gms,
-      /(?:^|\n)\s*(Q[\.\s]*\d+[\.\)]?)\s*(.+?)(?=\n\s*Q[\.\s]*\d+|$)/gms,
-      /(?:^|\n)\s*(Question\s+\d+[\.\:]?)\s*(.+?)(?=\n\s*Question\s+\d+|$)/gms,
-      /(?:^|\n)\s*([A-Z]\d+[\.\)])\s*(.+?)(?=\n\s*[A-Z]\d+[\.\)]|$)/gms,
-      /(?:^|\n)\s*(\d+[\.\)]\d+)\s*(.+?)(?=\n\s*\d+[\.\)]\d+|$)/gms
-    ];
+    // Split questions by Q. or Q\n or Q (with/without dot)
+    const questionBlocks = cleanText.split(/\n?Q\.?\s/).filter(q => q.trim().length > 0);
+    // Match options like a) LCD, b) CRT, c) LED, d) None of these (across lines)
+    // Improved option extraction: split by each [a-dA-D]) marker, capturing all options individually
+    const optionSplitRegex = /([a-dA-D])\)\s*([^\n]*)(?=\s*[a-dA-D]\)|$)/g;
 
     const questions = [];
     let questionId = 1;
-
-    for (const pattern of questionPatterns) {
-      const matches = [...cleanText.matchAll(pattern)];
-      
-      for (const match of matches) {
-        const questionMarker = match[1];
-        const questionContent = match[2].trim();
-        
-        if (questionContent.length < 8) continue;
-
-        const parsedQuestion = this.parseQuestionContent(questionContent, questionId);
-        if (parsedQuestion && !this.isDuplicateQuestion(questions, parsedQuestion)) {
-          questions.push(parsedQuestion);
-          questionId++;
+    for (let block of questionBlocks) {
+      // Find the question text (before first option)
+      const firstOptionIdx = block.search(/[a-dA-D]\)/);
+      let questionText = firstOptionIdx > 0 ? block.slice(0, firstOptionIdx).replace(/^[\d\.\)\s]+/, '').trim() : block.trim();
+      // Extract options
+      const options = [];
+      // Use a global regex to find all option markers and their positions
+      const optionMarkers = [...block.matchAll(/([a-dA-D])\)/g)];
+      for (let i = 0; i < optionMarkers.length; i++) {
+        const label = optionMarkers[i][1].toUpperCase();
+        const startIdx = optionMarkers[i].index + 2; // after 'a)'
+        const endIdx = (i < optionMarkers.length - 1) ? optionMarkers[i + 1].index : block.length;
+        let text = block.slice(startIdx, endIdx).replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+        if (text.length > 0) {
+          options.push({ label, text });
         }
       }
-      
-      if (questions.length > 0) break;
+      if (questionText.length < 8 || options.length < 2) continue;
+      questions.push({
+        id: questionId++,
+        questionText,
+        options
+      });
     }
-
-    if (questions.length === 0) {
-      const segments = this.splitTextIntoSegments(cleanText);
-      for (let i = 0; i < segments.length; i++) {
-        const parsedQuestion = this.parseQuestionContent(segments[i], i + 1);
-        if (parsedQuestion && !this.isDuplicateQuestion(questions, parsedQuestion)) {
-          questions.push(parsedQuestion);
-        }
-      }
-    }
-
-    return this.postProcessQuestions(questions);
+    return questions.map(q => ({ id: q.id, questionText: q.questionText, options: q.options }));
   }
 
   parseQuestionContent(content, questionId) {
