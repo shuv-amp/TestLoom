@@ -1,0 +1,7 @@
+node_modules
+dist
+.git
+*.log
+packages/backend/src/uploads
+docker-compose.override.yml
+.env
