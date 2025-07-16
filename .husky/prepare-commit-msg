@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Enforce commit message template
+if [ -z "$2" ]; then
+  echo "[INFO] Please include an issue reference in your commit message (e.g., #123)" >&2
+fi
