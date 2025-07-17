@@ -35,15 +35,6 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Chapter</label>
-            <input 
-              v-model="metadata.chapter" 
-              type="text" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., Data Structures"
-            />
-          </div>
-          <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
             <select 
               v-model="metadata.difficulty" 
@@ -154,7 +145,6 @@ const route = useRoute()
 const questions = ref([])
 const metadata = ref({
   subject: '',
-  chapter: '',
   difficulty: 'medium'
 })
 const saving = ref(false)
@@ -204,7 +194,6 @@ const saveQuestions = async () => {
         questions: processedQuestions,
         metadata: {
           subject: metadata.value.subject,
-          chapter: metadata.value.chapter,
           difficulty: metadata.value.difficulty,
           originalFileName: route.query.fileName || 'unknown'
         }

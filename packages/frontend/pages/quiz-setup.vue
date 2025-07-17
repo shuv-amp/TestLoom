@@ -37,19 +37,6 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Chapter (Optional)</label>
-            <select 
-              v-model="quizConfig.chapter" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All chapters</option>
-              <option v-for="chapter in availableChapters" :key="chapter" :value="chapter">
-                {{ chapter }}
-              </option>
-            </select>
-          </div>
-
-          <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Number of Questions</label>
             <select 
               v-model="quizConfig.numberOfQuestions" 
@@ -107,7 +94,6 @@
             <span class="font-medium">Available Questions:</span> 
             {{ availableQuestionCount }} question(s) found
             <span v-if="quizConfig.subject">for {{ quizConfig.subject }}</span>
-            <span v-if="quizConfig.chapter">in {{ quizConfig.chapter }}</span>
           </p>
         </div>
 
@@ -143,14 +129,12 @@ const router = useRouter()
 
 const quizConfig = ref({
   subject: '',
-  chapter: '',
   numberOfQuestions: '10',
   mode: 'practice',
   timerMinutes: '15'
 })
 
 const availableSubjects = ref([])
-const availableChapters = ref([])
 const availableQuestionCount = ref(0)
 const loading = ref(false)
 const errorMessage = ref('')
@@ -174,30 +158,6 @@ const fetchAvailableSubjects = async () => {
   }
 }
 
-const fetchAvailableChapters = async () => {
-  if (!quizConfig.value.subject) {
-    availableChapters.value = []
-    return
-  }
-
-  try {
-    const token = localStorage.getItem('token')
-    const response = await fetch(`http://localhost:5000/api/questions?subject=${encodeURIComponent(quizConfig.value.subject)}&limit=1000`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
-    
-    const data = await response.json()
-    if (data.success && data.data.questions) {
-      const chapters = [...new Set(data.data.questions.map(q => q.chapter).filter(Boolean))]
-      availableChapters.value = chapters
-    }
-  } catch (error) {
-    console.error('Error fetching chapters:', error)
-  }
-}
-
 const updateQuestionCount = async () => {
   if (!quizConfig.value.subject) {
     availableQuestionCount.value = 0
@@ -207,10 +167,6 @@ const updateQuestionCount = async () => {
   try {
     const token = localStorage.getItem('token')
     let url = `http://localhost:5000/api/questions?subject=${encodeURIComponent(quizConfig.value.subject)}&limit=1000`
-    
-    if (quizConfig.value.chapter) {
-      url += `&chapter=${encodeURIComponent(quizConfig.value.chapter)}`
-    }
 
     const response = await fetch(url, {
       headers: {
@@ -245,10 +201,6 @@ const startQuiz = async () => {
   try {
     const token = localStorage.getItem('token')
     let url = `http://localhost:5000/api/questions?subject=${encodeURIComponent(quizConfig.value.subject)}&limit=${quizConfig.value.numberOfQuestions}`
-    
-    if (quizConfig.value.chapter) {
-      url += `&chapter=${encodeURIComponent(quizConfig.value.chapter)}`
-    }
 
     const response = await fetch(url, {
       headers: {
@@ -273,15 +225,8 @@ const startQuiz = async () => {
   }
 }
 
-// Watch for changes in subject to update chapters and question count
+// Watch for changes in subject to update question count
 watch(() => quizConfig.value.subject, () => {
-  quizConfig.value.chapter = '' 
-  fetchAvailableChapters()
-  updateQuestionCount()
-})
-
-// Watch for changes in chapter to update question count
-watch(() => quizConfig.value.chapter, () => {
   updateQuestionCount()
 })
 
