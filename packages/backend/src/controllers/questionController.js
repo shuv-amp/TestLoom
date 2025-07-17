@@ -34,7 +34,7 @@ const finalizeQuestions = async (req, res) => {
           semester: metadata.semester,
           difficulty: questionData.difficulty || metadata.difficulty || 'medium',
           tags: questionData.tags || metadata.tags || [],
-          createdBy: req.user.id,
+          createdBy: req.user.userId,
           source: 'ocr',
           ocrMetadata: {
             originalFileName: metadata.originalFileName,
