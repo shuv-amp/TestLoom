@@ -32,9 +32,9 @@
           <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition">
             <h3 class="font-bold text-xl text-gray-800">Start New Quiz</h3>
             <p class="text-gray-600 mt-1">Choose a subject and chapter to begin practicing.</p>
-            <button class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-blue-700">
+            <NuxtLink to="/quiz-setup" class="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-blue-700">
               Select Subject
-            </button>
+            </NuxtLink>
           </div>
           <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition">
             <h3 class="font-bold text-xl text-gray-800">View Performance</h3>
@@ -114,7 +114,8 @@ const uploadSelectedFile = async () => {
     })
     const data = await res.json()
     if (data.success && data.data && data.data.questions) {
-      ocrResult.value = JSON.stringify(data.data.questions, null, 2)
+      localStorage.setItem('ocrQuestions', JSON.stringify(data.data.questions))
+      router.push('/verify-ocr')
     } else {
       error.value = data.message || 'OCR failed.'
     }
