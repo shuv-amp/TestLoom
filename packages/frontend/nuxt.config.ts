@@ -21,8 +21,9 @@ export default defineNuxtConfig({
     '@nuxt/test-utils',
     '@nuxt/ui'
   ],
-  content: {
-    // You can leave this empty for now, or add options later.
-    // See documentation: https://content.nuxt.com/get-started/configuration
-  },
+  runtimeConfig: {
+    public: {
+      socketUrl: process.env.NUXT_PUBLIC_SOCKET_URL || 'http://localhost:5000'
+    }
+  }
 });
