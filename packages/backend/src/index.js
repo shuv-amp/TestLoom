@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const connectDB = require('./config/database');
+const http = require('http');
+const { initSocket } = require('./socket');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -11,6 +13,10 @@ const questionRoutes = require('./routes/questionRoutes');
 
 // Initialize Express app
 const app = express();
+const server = http.createServer(app);
+
+// Initialize Socket.IO
+initSocket(server);
 
 // Connect to MongoDB
 connectDB();
@@ -67,7 +73,7 @@ app.use('*', (req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`
 🚀 TestLoom Server running on port ${PORT}
 📅 Started at: ${new Date().toISOString()}
