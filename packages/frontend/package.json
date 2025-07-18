@@ -14,7 +14,7 @@
     "test:coverage": "vitest --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "postinstall": "mkdir -p .data/content && pnpm approve-builds --yes || true"
+    "postinstall": "mkdir -p .data/content && pnpm nuxt-scripts approve-builds --yes || exit 0"
   },
   "dependencies": {
     "@nuxt/content": "3.6.1",
