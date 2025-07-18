@@ -2,7 +2,10 @@ import { io } from "socket.io-client";
 import { ref, onMounted, onUnmounted } from "vue";
 
 export function useSocket() {
-  const socket = io(process.env.NUXT_PUBLIC_SOCKET_URL || "http://localhost:5000");
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const socket = io(process.env.NUXT_PUBLIC_SOCKET_URL || "http://localhost:5000", {
+    auth: { token }
+  });
   const messages = ref([]);
   const isConnected = ref(false);
 
@@ -12,6 +15,10 @@ export function useSocket() {
 
   socket.on("disconnect", () => {
     isConnected.value = false;
+  });
+
+  socket.on("connect_error", (err) => {
+    messages.value.push({ user: "System", message: err.message });
   });
 
   socket.on("chatMessage", (data) => {
@@ -31,7 +38,6 @@ export function useSocket() {
   }
 
   onMounted(() => {
-    // Clean up the socket connection when the component is unmounted
     onUnmounted(() => {
       socket.disconnect();
     });
