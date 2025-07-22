@@ -10,7 +10,7 @@ class OCRPostProcessingService {
       'rn': 'm', 'vv': 'w', 'VV': 'W', 'ii': 'll', 'Il': 'll',
       '0O': 'OO', 'O0': '00', '5S': 'SS', 'S5': '55',
       '6G': 'GG', 'G6': '66', '8B': 'BB', 'B8': '88',
-      '1l': 'll', 'l1': '11', '2Z': 'ZZ', 'Z2': '22',
+      '2Z': 'ZZ', 'Z2': '22',
       
       // Word-level corrections
       'tlie': 'the', 'tiie': 'the', 'tne': 'the',
@@ -189,9 +189,14 @@ class OCRPostProcessingService {
       return match.replace(/0/g, 'O');
     });
     
-    // Correct 1/I/l based on context
-    text = text.replace(/\b1([a-z]+)\b/gi, 'I$1'); // Word beginning
+    // Correct 1/I/l based on context - BUT preserve Q1, Q2, etc.
+    text = text.replace(/\b1([a-z]+)\b/gi, 'I$1'); // Word beginning (but not Q1)
     text = text.replace(/\b([a-z]+)1\b/gi, '$1l'); // Word ending
+    
+    // Preserve question numbering like Q1, Q2, etc.
+    text = text.replace(/\bQ[Il]\b/g, 'Q1');
+    text = text.replace(/\bQII\b/g, 'Q2');
+    text = text.replace(/\bQIII\b/g, 'Q3');
     
     // Correct 5/S based on context
     text = text.replace(/5([a-z])/gi, 'S$1');
@@ -385,17 +390,14 @@ class OCRPostProcessingService {
    */
   normalizeQuestionBlock(block) {
     return block
-      // Remove leading question numbers/markers
-      .replace(/^(?:Q\.?\s*\d*\.?\s*|Question\s+\d+\s*[\.\:\-]?\s*|\d+\s*\.(?!\d)\s*)/i, '')
-      
       // Ensure proper line breaks before options
       .replace(/([.!?])\s*([A-E])\s*[\)\.\:]/, '$1\n$2) ')
       
-      // Clean up option formatting
+      // Clean up option formatting but preserve structure
       .replace(/\n\s*([A-E])\s*[\)\.\:]\s*/gi, '\n$1) ')
       
-      // Remove excessive spacing
-      .replace(/\s+/g, ' ')
+      // Remove excessive spacing but preserve line breaks
+      .replace(/[ \t]+/g, ' ')
       .replace(/\n\s+/g, '\n')
       
       .trim();
@@ -410,36 +412,55 @@ class OCRPostProcessingService {
       options: []
     };
     
-    // Split by option markers
-    const optionPattern = /\n([A-E])\)\s*/gi;
-    const parts = block.split(optionPattern);
+    // First, let's properly split by newlines and clean up
+    const lines = block.split('\n').map(line => line.trim()).filter(line => line.length > 0);
     
-    if (parts.length > 1) {
-      // First part is question text
-      result.questionText = parts[0].trim();
+    if (lines.length === 0) return result;
+    
+    let questionLines = [];
+    let currentOption = null;
+    let inOptions = false;
+    
+    for (const line of lines) {
+      // Check if this line starts an option
+      const optionMatch = line.match(/^([A-E])\s*[\)\.\:]\s*(.*)$/i);
       
-      // Extract options
-      for (let i = 1; i < parts.length; i += 2) {
-        if (i + 1 < parts.length) {
-          const label = parts[i].toUpperCase();
-          const text = parts[i + 1].trim();
-          
-          // Validate option
-          if (text.length > 0 && text.length < 500) { // Reasonable option length
-            result.options.push({
-              label: label,
-              text: this.cleanOptionText(text)
-            });
-          }
+      if (optionMatch) {
+        // Save previous option if exists
+        if (currentOption) {
+          result.options.push(currentOption);
         }
+        
+        // Start new option
+        currentOption = {
+          label: optionMatch[1].toUpperCase(),
+          text: optionMatch[2].trim()
+        };
+        inOptions = true;
+      } else if (inOptions && currentOption && line.length > 0) {
+        // Continue current option text
+        currentOption.text += ' ' + line;
+      } else if (!inOptions) {
+        // This is part of the question
+        questionLines.push(line);
       }
-    } else {
-      // No clear options found - might be descriptive or FIB
-      result.questionText = block.trim();
     }
     
-    // Post-process question text
-    result.questionText = this.cleanQuestionText(result.questionText);
+    // Save last option
+    if (currentOption) {
+      result.options.push(currentOption);
+    }
+    
+    // Combine question lines
+    result.questionText = questionLines.join(' ').trim();
+    
+    // Clean up options
+    result.options = result.options
+      .filter(opt => opt.text.length > 0)
+      .map(opt => ({
+        ...opt,
+        text: this.cleanOptionText(opt.text)
+      }));
     
     return result;
   }
@@ -985,6 +1006,83 @@ class OCRPostProcessingService {
     }
     
     return matrix[len1][len2];
+  }
+
+  /**
+   * Validate individual question
+   */
+  validateQuestion(question, confidence) {
+    const validation = {
+      score: 1.0,
+      issues: [],
+      suggestions: []
+    };
+    
+    // Validate question text
+    if (question.questionText.length < 10) {
+      validation.score *= 0.7;
+      validation.issues.push('Question text too short');
+      validation.suggestions.push('Consider combining with nearby text');
+    }
+    
+    if (question.questionText.length > 500) {
+      validation.score *= 0.8;
+      validation.issues.push('Question text very long');
+      validation.suggestions.push('May contain multiple questions');
+    }
+    
+    // Type-specific validation
+    if (question.type === 'MCQ') {
+      this.validateMCQ(question, validation);
+    } else if (question.type === 'FIB') {
+      this.validateFIB(question, validation);
+    }
+    
+    return validation;
+  }
+
+  /**
+   * Validate MCQ question
+   */
+  validateMCQ(question, validation) {
+    if (!question.options || question.options.length < 2) {
+      validation.score *= 0.5;
+      validation.issues.push('Insufficient options for MCQ');
+      validation.suggestions.push('Check for missing option text');
+    }
+    
+    if (question.options && question.options.length > 5) {
+      validation.score *= 0.8;
+      validation.issues.push('Too many options for typical MCQ');
+      validation.suggestions.push('Verify option extraction accuracy');
+    }
+    
+    // Check for duplicate options
+    if (question.options) {
+      const optionTexts = question.options.map(opt => opt.text.toLowerCase());
+      const uniqueTexts = new Set(optionTexts);
+      if (uniqueTexts.size !== optionTexts.length) {
+        validation.score *= 0.6;
+        validation.issues.push('Duplicate options detected');
+      }
+    }
+  }
+
+  /**
+   * Validate Fill-in-the-Blank question
+   */
+  validateFIB(question, validation) {
+    if (!question.blanks || question.blanks.length === 0) {
+      validation.score *= 0.3;
+      validation.issues.push('No blanks detected for FIB question');
+      validation.suggestions.push('Check blank pattern recognition');
+    }
+    
+    if (question.blanks && question.blanks.length > 10) {
+      validation.score *= 0.7;
+      validation.issues.push('Too many blanks detected');
+      validation.suggestions.push('May be over-detection of blanks');
+    }
   }
 }
 
