@@ -9,6 +9,7 @@ const { initSocket } = require('./socket');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const ocrRoutes = require('./routes/ocrRoutes');
+const ocrMonitoringRoutes = require('./routes/ocrMonitoringRoutes');
 const questionRoutes = require('./routes/questionRoutes');
 
 // Initialize Express app
@@ -50,6 +51,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ocr', ocrRoutes);
+app.use('/api/ocr', ocrMonitoringRoutes);
 app.use('/api/questions', questionRoutes);
 
 // Global error handler
