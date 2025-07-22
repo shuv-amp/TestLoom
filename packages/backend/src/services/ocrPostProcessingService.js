@@ -239,7 +239,15 @@ class OCRPostProcessingService {
     let correctedText = text;
     
     for (const [error, correction] of Object.entries(this.mathCorrections)) {
-      const regex = new RegExp(`\\b${error}\\b`, 'gi');
+      let regex;
+      // Use word boundaries only for alphanumeric errors
+      if (/^[a-zA-Z0-9]+$/.test(error)) {
+        regex = new RegExp(`\\b${error}\\b`, 'gi');
+      } else {
+        // Escape special regex characters
+        const escaped = error.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        regex = new RegExp(escaped, 'gi');
+      }
       correctedText = correctedText.replace(regex, correction);
     }
     
