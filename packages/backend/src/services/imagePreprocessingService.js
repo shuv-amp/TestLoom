@@ -1,5 +1,5 @@
 const sharp = require('sharp');
-const Jimp = require('jimp');
+const { Jimp } = require('jimp');
 
 /**
  * Advanced Image Preprocessing Service for OCR Enhancement
