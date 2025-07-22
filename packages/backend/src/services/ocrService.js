@@ -2,6 +2,9 @@ const { createWorker } = require('tesseract.js');
 const imagePreprocessingService = require('./imagePreprocessingService');
 const ocrConfigurationService = require('./ocrConfigurationService');
 const ocrPostProcessingService = require('./ocrPostProcessingService');
+const ocrPerformanceMonitor = require('./ocrPerformanceMonitor');
+const ocrCacheService = require('./ocrCacheService');
+const ocrConfigManager = require('../config/ocrConfig');
 
 /**
  * Enhanced OCR Service with Industry-Leading Accuracy
@@ -59,13 +62,61 @@ class EnhancedOCRService {
    * @param {Object} options - Processing options
    */
   async extractTextFromImage(imageBuffer, options = {}) {
+    // Start performance monitoring
+    const monitoringSession = ocrPerformanceMonitor.recordProcessingStart(
+      options.requestId,
+      { 
+        fileName: options.fileName,
+        userId: options.userId,
+        imageSize: imageBuffer.length
+      }
+    );
+    
     const startTime = Date.now();
     const processingLog = [];
     
     try {
       await this.initialize();
       
-      processingLog.push(`Started OCR processing at ${new Date().toISOString()}`);
+      processingLog.push(`Started enhanced OCR processing at ${new Date().toISOString()}`);
+      
+      // Step 0: Check cache for existing result
+      const cacheStart = Date.now();
+      const cachedResult = ocrCacheService.get(imageBuffer, options);
+      
+      if (cachedResult) {
+        const cacheTime = Date.now() - cacheStart;
+        processingLog.push(`Cache hit - returning cached result in ${cacheTime}ms`);
+        
+        // Record successful cache hit
+        ocrPerformanceMonitor.recordProcessingComplete(monitoringSession, {
+          success: true,
+          fromCache: true,
+          timing: { total: cacheTime },
+          confidence: cachedResult.confidence,
+          questionsFound: cachedResult.structuredData?.length || 0
+        });
+        
+        return {
+          ...cachedResult,
+          processingInfo: {
+            ...cachedResult.processingInfo,
+            fromCache: true,
+            cacheHit: true,
+            totalTime: cacheTime,
+            processingLog: process.env.NODE_ENV === 'development' ? processingLog : undefined
+          }
+        };
+      }
+      
+      const cacheTime = Date.now() - cacheStart;
+      processingLog.push(`Cache miss - proceeding with full processing (${cacheTime}ms)`);
+      
+      // Check for duplicate images
+      const duplicateCheck = await ocrCacheService.checkDuplicate(imageBuffer);
+      if (duplicateCheck?.isDuplicate) {
+        processingLog.push(`Duplicate image detected (similarity: ${duplicateCheck.similarity})`);
+      }
       
       // Step 1: Advanced Image Preprocessing
       const preprocessingStart = Date.now();
@@ -76,6 +127,9 @@ class EnhancedOCRService {
       const preprocessingTime = Date.now() - preprocessingStart;
       this.performanceMetrics.preprocessingTime.push(preprocessingTime);
       processingLog.push(`Image preprocessing completed in ${preprocessingTime}ms`);
+      
+      // Record preprocessing metrics
+      ocrPerformanceMonitor.recordPreprocessingMetrics(preprocessingTime, { qualityScore: 80 });
       
       // Step 2: Preliminary OCR for configuration optimization
       const preliminaryStart = Date.now();
@@ -102,22 +156,30 @@ class EnhancedOCRService {
         imageQuality
       );
       
+      // Apply global configuration overrides
+      const globalConfig = ocrConfigManager.getOptimizedConfiguration(imageQuality, 'questionnaire');
+      const finalConfig = this.mergeConfigurations(optimalConfig, globalConfig);
+      
       const configTime = Date.now() - configStart;
       processingLog.push(`Configuration optimization completed in ${configTime}ms`);
-      processingLog.push(`Optimal configuration: PSM=${optimalConfig.psm}, OEM=${optimalConfig.oem}`);
+      processingLog.push(`Final configuration: PSM=${finalConfig.psm}, OEM=${finalConfig.oem}, Quality=${imageQuality}`);
       
       // Step 4: Enhanced OCR Processing
       const ocrStart = Date.now();
       processingLog.push('Performing enhanced OCR processing...');
       
       const enhancedResult = await this.worker.recognize(enhancedImageBuffer, {
-        lang: optimalConfig.lang,
-        options: optimalConfig.options
+        lang: finalConfig.lang,
+        options: finalConfig.options
       });
       
       const ocrTime = Date.now() - ocrStart;
       this.performanceMetrics.ocrTime.push(ocrTime);
       processingLog.push(`Enhanced OCR completed in ${ocrTime}ms`);
+      processingLog.push(`OCR confidence: ${enhancedResult.data.confidence}`);
+      
+      // Record OCR metrics
+      ocrPerformanceMonitor.recordOCRMetrics(ocrTime, enhancedResult.data.confidence, { utilization: 0.8 });
       
       // Step 5: Advanced Post-Processing
       const postprocessingStart = Date.now();
@@ -136,6 +198,9 @@ class EnhancedOCRService {
       this.performanceMetrics.postprocessingTime.push(postprocessingTime);
       processingLog.push(`Post-processing completed in ${postprocessingTime}ms`);
       
+      // Record post-processing metrics
+      ocrPerformanceMonitor.recordPostProcessingMetrics(postprocessingTime, processedResult.qualityMetrics);
+      
       // Step 6: Final Quality Assessment and Reporting
       const totalTime = Date.now() - startTime;
       this.performanceMetrics.totalTime.push(totalTime);
@@ -148,10 +213,14 @@ class EnhancedOCRService {
         processingInfo: {
           totalTime,
           preprocessingTime,
+          preliminaryTime,
           ocrTime,
           postprocessingTime,
           imageQuality,
-          configuration: optimalConfig,
+          configuration: finalConfig,
+          fromCache: false,
+          cacheHit: false,
+          duplicateCheck: duplicateCheck,
           processingLog: process.env.NODE_ENV === 'development' ? processingLog : undefined
         },
         rawData: process.env.NODE_ENV === 'development' ? {
@@ -160,11 +229,30 @@ class EnhancedOCRService {
         } : undefined
       };
       
+      // Cache the result for future use
+      const cacheSuccess = ocrCacheService.set(imageBuffer, options, finalResult);
+      if (cacheSuccess) {
+        processingLog.push('Result cached successfully');
+      }
+      
       // Update statistics
       this.updateProcessingStats(totalTime, processedResult.qualityMetrics.overallScore);
       
+      // Record successful processing
+      ocrPerformanceMonitor.recordProcessingComplete(monitoringSession, {
+        success: true,
+        timing: {
+          preprocessing: preprocessingTime,
+          ocr: ocrTime,
+          postprocessing: postprocessingTime
+        },
+        confidence: enhancedResult.data.confidence,
+        imageQuality: imageQuality,
+        questionsFound: processedResult.structuredData?.length || 0
+      });
+      
       processingLog.push(`Total processing completed in ${totalTime}ms`);
-      console.log(`OCR processing completed successfully in ${totalTime}ms`);
+      console.log(`Enhanced OCR processing completed successfully in ${totalTime}ms`);
       
       return finalResult;
       
@@ -172,6 +260,20 @@ class EnhancedOCRService {
       const totalTime = Date.now() - startTime;
       console.error('Enhanced OCR processing failed:', error);
       processingLog.push(`Processing failed: ${error.message}`);
+      
+      // Determine failure stage
+      let failureStage = 'unknown';
+      if (error.message.includes('preprocessing')) failureStage = 'preprocessing';
+      else if (error.message.includes('OCR')) failureStage = 'ocr';
+      else if (error.message.includes('post-processing')) failureStage = 'postprocessing';
+      
+      // Record failed processing
+      ocrPerformanceMonitor.recordProcessingComplete(monitoringSession, {
+        success: false,
+        error: error.message,
+        failureStage: failureStage,
+        timing: { total: totalTime }
+      });
       
       throw new Error(`OCR processing failed after ${totalTime}ms: ${error.message}`);
     }
@@ -643,18 +745,149 @@ class EnhancedOCRService {
   }
 
   /**
-   * Get comprehensive processing statistics
+   * Merge multiple configurations with precedence
+   */
+  mergeConfigurations(baseConfig, overrideConfig) {
+    const merged = JSON.parse(JSON.stringify(baseConfig)); // Deep clone
+    
+    if (!overrideConfig) return merged;
+    
+    // Merge tesseract options
+    if (overrideConfig.tesseract) {
+      merged.psm = overrideConfig.tesseract.psm || merged.psm;
+      merged.oem = overrideConfig.tesseract.oem || merged.oem;
+      merged.lang = overrideConfig.tesseract.lang || merged.lang;
+      
+      if (overrideConfig.tesseract.whitelist) {
+        merged.options = merged.options || {};
+        merged.options.tessedit_char_whitelist = overrideConfig.tesseract.whitelist;
+      }
+    }
+    
+    return merged;
+  }
+
+  /**
+   * Get comprehensive processing statistics including performance monitoring
    */
   getProcessingStats() {
     const recentMetrics = this.getRecentPerformanceMetrics();
+    const performanceStats = ocrPerformanceMonitor.getPerformanceStats();
+    const cacheStats = ocrCacheService.getStats();
+    const configSummary = ocrConfigManager.getConfigurationSummary();
     
     return {
+      // Legacy stats (maintained for compatibility)
       ...this.processingStats,
       averageProcessingTime: Math.round(this.processingStats.averageProcessingTime),
       averageAccuracy: Math.round(this.processingStats.averageAccuracy * 100) / 100,
       recentPerformance: recentMetrics,
-      imagePreprocessingStats: imagePreprocessingService.getStats()
+      imagePreprocessingStats: imagePreprocessingService.getStats(),
+      
+      // Enhanced monitoring stats
+      performanceMonitoring: {
+        enabled: true,
+        uptime: performanceStats.uptime,
+        requests: performanceStats.requests,
+        performance: performanceStats.performance,
+        quality: performanceStats.quality,
+        errors: performanceStats.errors,
+        resources: performanceStats.resources,
+        alerts: performanceStats.alerts
+      },
+      
+      // Caching stats
+      caching: cacheStats,
+      
+      // Configuration info
+      configuration: configSummary,
+      
+      // Service health
+      health: {
+        status: this.getHealthStatus(performanceStats),
+        score: this.calculateHealthScore(performanceStats, cacheStats),
+        recommendations: this.generateHealthRecommendations(performanceStats, cacheStats)
+      }
     };
+  }
+
+  /**
+   * Calculate service health status
+   */
+  getHealthStatus(performanceStats) {
+    const errorRate = performanceStats.requests.errorRate;
+    const avgProcessingTime = performanceStats.performance.averageProcessingTime;
+    const avgConfidence = performanceStats.quality.averageConfidence;
+    
+    if (errorRate > 0.1 || avgProcessingTime > 45000 || avgConfidence < 0.4) {
+      return 'unhealthy';
+    } else if (errorRate > 0.05 || avgProcessingTime > 30000 || avgConfidence < 0.6) {
+      return 'degraded';
+    } else {
+      return 'healthy';
+    }
+  }
+
+  /**
+   * Calculate overall health score (0-100)
+   */
+  calculateHealthScore(performanceStats, cacheStats) {
+    let score = 100;
+    
+    // Deduct for error rate
+    score -= performanceStats.requests.errorRate * 50;
+    
+    // Deduct for slow processing
+    if (performanceStats.performance.averageProcessingTime > 30000) {
+      score -= 20;
+    } else if (performanceStats.performance.averageProcessingTime > 20000) {
+      score -= 10;
+    }
+    
+    // Deduct for low confidence
+    if (performanceStats.quality.averageConfidence < 0.5) {
+      score -= 15;
+    } else if (performanceStats.quality.averageConfidence < 0.7) {
+      score -= 5;
+    }
+    
+    // Add for good cache performance
+    if (cacheStats.enabled && cacheStats.hitRate > 0.3) {
+      score += 5;
+    }
+    
+    return Math.max(0, Math.min(100, Math.round(score)));
+  }
+
+  /**
+   * Generate health recommendations
+   */
+  generateHealthRecommendations(performanceStats, cacheStats) {
+    const recommendations = [];
+    
+    if (performanceStats.requests.errorRate > 0.05) {
+      recommendations.push('High error rate detected - review image quality and preprocessing settings');
+    }
+    
+    if (performanceStats.performance.averageProcessingTime > 30000) {
+      recommendations.push('Slow processing detected - consider reducing image sizes or optimizing configuration');
+    }
+    
+    if (performanceStats.quality.averageConfidence < 0.6) {
+      recommendations.push('Low confidence scores - review OCR configuration and enable advanced preprocessing');
+    }
+    
+    if (!cacheStats.enabled) {
+      recommendations.push('Caching is disabled - enable caching to improve performance for repeated images');
+    } else if (cacheStats.hitRate < 0.2) {
+      recommendations.push('Low cache hit rate - review cache configuration and TTL settings');
+    }
+    
+    if (performanceStats.resources.currentMemoryUsage > 400 * 1024 * 1024) {
+      recommendations.push('High memory usage detected - consider reducing cache size or worker pool');
+    }
+    
+    return recommendations;
   }
 
   /**
