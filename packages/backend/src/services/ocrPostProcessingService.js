@@ -127,27 +127,36 @@ class OCRPostProcessingService {
    */
   initialTextCleaning(text) {
     return text
-      // Remove excessive whitespace
-      .replace(/\s+/g, ' ')
-      .replace(/\n\s*\n/g, '\n')
+      // Preserve line breaks for structure detection
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      
+      // Remove excessive whitespace but preserve structure
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
       
       // Remove common OCR artifacts
       .replace(/[""'']/g, '"')  // Normalize quotes
       .replace(/[–—]/g, '-')    // Normalize dashes
       .replace(/…/g, '...')     // Normalize ellipsis
       
-      // Remove isolated special characters
-      .replace(/\s+[!@#$%^&*()+={}[\]|\\:";'<>?,./]\s+/g, ' ')
+      // Remove isolated special characters but preserve structure markers
+      .replace(/(?<!\w)[!@#$%^&*+={}[\]|\\:";'<>?,./](?!\w)/g, '')
       
-      // Clean up question numbering
-      .replace(/Q\s*\.?\s*(\d+)\s*\.?\s*/gi, 'Q$1. ')
+      // Clean up question numbering with better pattern recognition
+      .replace(/(?:^|\n)\s*(?:Q|Question)\s*\.?\s*(\d+)\s*\.?\s*/gi, '\nQ$1. ')
+      .replace(/(?:^|\n)\s*(\d+)\s*\.(?!\d)/gi, '\nQ$1. ')
       
-      // Clean up option labels
-      .replace(/([A-D])\s*\)\s*/gi, '$1) ')
-      .replace(/\(\s*([A-D])\s*\)\s*/gi, '($1) ')
+      // Clean up option labels with enhanced pattern matching
+      .replace(/(?:^|\n)\s*([A-E])\s*[\)\.\:]\s*/gi, '\n$1) ')
+      .replace(/(?:^|\n)\s*\(\s*([A-E])\s*\)\s*/gi, '\n$1) ')
       
-      // Remove header/footer artifacts
-      .replace(/^(Page\s+\d+|TOP|MCQ|Computer|Name:.*|Date:.*)/gmi, '')
+      // Remove header/footer artifacts with expanded patterns
+      .replace(/^(Page\s+\d+|TOP|MCQ|Computer|Name:.*|Date:.*|Score:.*|Time:.*|Instructions:.*)/gmi, '')
+      .replace(/(?:^|\n)(Header|Footer|Page \d+ of \d+|Continue on next page)/gmi, '')
+      
+      // Remove duplicate question markers
+      .replace(/(\nQ\d+\. )+/g, '$1')
       
       .trim();
   }
@@ -296,41 +305,203 @@ class OCRPostProcessingService {
   }
 
   /**
-   * Split text into question blocks
+   * Split text into question blocks with enhanced detection
    */
   splitIntoQuestionBlocks(text) {
-    // Split by question markers
-    const questionMarkers = /(?:^|\n)\s*Q\.?\s*\d*\.?\s*/gi;
-    let blocks = text.split(questionMarkers).filter(block => block.trim().length > 10);
+    // Enhanced question marker patterns
+    const questionMarkers = [
+      /(?:^|\n)\s*Q\.?\s*(\d+)\s*\.?\s*/gi,           // Q1. or Q.1 or Q 1.
+      /(?:^|\n)\s*Question\s+(\d+)\s*[\.\:\-]?\s*/gi, // Question 1:
+      /(?:^|\n)\s*(\d+)\s*\.(?!\d)/gi,                // 1. (but not 1.5)
+      /(?:^|\n)\s*\[(\d+)\]\s*/gi,                    // [1]
+      /(?:^|\n)\s*\((\d+)\)\s*/gi                     // (1)
+    ];
     
-    // If no clear question markers, try other patterns
-    if (blocks.length < 2) {
-      blocks = text.split(/\n\s*\d+\.?\s*/).filter(block => block.trim().length > 10);
-    }
+    let blocks = [];
+    let bestSplit = [];
+    let maxBlocks = 0;
     
-    return blocks;
-  }
-
-  /**
-   * Analyze individual question block
-   */
-  analyzeQuestionBlock(block, questionId) {
-    // Try to match different question types
-    for (const [type, config] of Object.entries(this.questionPatterns)) {
-      const result = this.matchQuestionType(block, type, config, questionId);
-      if (result) {
-        return result;
+    // Try each pattern and use the one that gives the most reasonable splits
+    for (const pattern of questionMarkers) {
+      const splits = text.split(pattern).filter(block => block.trim().length > 20);
+      if (splits.length > maxBlocks && splits.length < 50) { // Reasonable range
+        maxBlocks = splits.length;
+        bestSplit = splits;
       }
     }
     
-    // If no specific type matched, treat as descriptive
-    return {
+    // If no good split found, try paragraph-based splitting
+    if (bestSplit.length < 2) {
+      bestSplit = text.split(/\n\s*\n/).filter(block => block.trim().length > 20);
+    }
+    
+    // Final fallback - split by double newlines or long single newlines
+    if (bestSplit.length < 2) {
+      bestSplit = text.split(/\n(?=\s*[A-Z].*\?)/g).filter(block => block.trim().length > 20);
+    }
+    
+    return bestSplit.map(block => block.trim());
+  }
+
+  /**
+   * Analyze individual question block with enhanced logic
+   */
+  analyzeQuestionBlock(block, questionId) {
+    // Clean and normalize the block
+    const normalizedBlock = this.normalizeQuestionBlock(block);
+    
+    // Separate question from options more precisely
+    const parsedData = this.parseQuestionAndOptions(normalizedBlock);
+    
+    if (!parsedData.questionText || parsedData.questionText.length < 5) {
+      return null; // Skip invalid blocks
+    }
+    
+    // Determine question type with enhanced detection
+    const questionType = this.determineQuestionType(parsedData);
+    
+    const questionData = {
       id: questionId,
-      type: 'DESCRIPTIVE',
-      questionText: this.cleanQuestionText(block),
-      confidence: 0.5,
+      type: questionType.type,
+      questionText: parsedData.questionText,
+      confidence: questionType.confidence,
       rawText: block
     };
+    
+    // Add type-specific data
+    if (questionType.type === 'MCQ') {
+      questionData.options = parsedData.options;
+      questionData.confidence = this.calculateMCQConfidence(questionData);
+    } else if (questionType.type === 'FIB') {
+      questionData.blanks = this.extractBlanks(parsedData.questionText);
+      questionData.confidence = this.calculateFIBConfidence(questionData);
+    }
+    
+    return questionData;
+  }
+
+  /**
+   * Normalize question block for better parsing
+   */
+  normalizeQuestionBlock(block) {
+    return block
+      // Remove leading question numbers/markers
+      .replace(/^(?:Q\.?\s*\d*\.?\s*|Question\s+\d+\s*[\.\:\-]?\s*|\d+\s*\.(?!\d)\s*)/i, '')
+      
+      // Ensure proper line breaks before options
+      .replace(/([.!?])\s*([A-E])\s*[\)\.\:]/, '$1\n$2) ')
+      
+      // Clean up option formatting
+      .replace(/\n\s*([A-E])\s*[\)\.\:]\s*/gi, '\n$1) ')
+      
+      // Remove excessive spacing
+      .replace(/\s+/g, ' ')
+      .replace(/\n\s+/g, '\n')
+      
+      .trim();
+  }
+
+  /**
+   * Parse question text and options with enhanced separation logic
+   */
+  parseQuestionAndOptions(block) {
+    const result = {
+      questionText: '',
+      options: []
+    };
+    
+    // Split by option markers
+    const optionPattern = /\n([A-E])\)\s*/gi;
+    const parts = block.split(optionPattern);
+    
+    if (parts.length > 1) {
+      // First part is question text
+      result.questionText = parts[0].trim();
+      
+      // Extract options
+      for (let i = 1; i < parts.length; i += 2) {
+        if (i + 1 < parts.length) {
+          const label = parts[i].toUpperCase();
+          const text = parts[i + 1].trim();
+          
+          // Validate option
+          if (text.length > 0 && text.length < 500) { // Reasonable option length
+            result.options.push({
+              label: label,
+              text: this.cleanOptionText(text)
+            });
+          }
+        }
+      }
+    } else {
+      // No clear options found - might be descriptive or FIB
+      result.questionText = block.trim();
+    }
+    
+    // Post-process question text
+    result.questionText = this.cleanQuestionText(result.questionText);
+    
+    return result;
+  }
+
+  /**
+   * Determine question type with enhanced logic
+   */
+  determineQuestionType(parsedData) {
+    // MCQ detection with multiple criteria
+    if (parsedData.options.length >= 2) {
+      let mcqConfidence = 0.8;
+      
+      // Check for question indicator
+      if (/[?]/.test(parsedData.questionText)) {
+        mcqConfidence += 0.1;
+      }
+      
+      // Check option quality
+      const validOptions = parsedData.options.filter(opt => 
+        opt.text.length > 2 && opt.text.length < 200
+      );
+      
+      if (validOptions.length === parsedData.options.length) {
+        mcqConfidence += 0.05;
+      }
+      
+      // Check for typical MCQ phrases
+      if (/\b(choose|select|which|best describes|most likely|correct)\b/i.test(parsedData.questionText)) {
+        mcqConfidence += 0.05;
+      }
+      
+      return { type: 'MCQ', confidence: Math.min(mcqConfidence, 1.0) };
+    }
+    
+    // Fill-in-the-blank detection
+    const blankPatterns = [
+      /_{3,}/g,                    // Underscores
+      /\[[\s\.]*\]/g,             // Empty brackets
+      /\(\s*\)/g,                 // Empty parentheses
+      /\.{3,}/g,                  // Dots
+      /\b(blank|fill|complete)\b/i // Keywords
+    ];
+    
+    let blankCount = 0;
+    for (const pattern of blankPatterns) {
+      const matches = parsedData.questionText.match(pattern);
+      if (matches) {
+        blankCount += matches.length;
+      }
+    }
+    
+    if (blankCount > 0 || /\b(fill|complete|blank)\b/i.test(parsedData.questionText)) {
+      return { type: 'FIB', confidence: 0.7 + Math.min(blankCount * 0.1, 0.2) };
+    }
+    
+    // True/False detection
+    if (/\b(true|false|T\/F|yes\/no)\b/i.test(parsedData.questionText)) {
+      return { type: 'TRUEFALSE', confidence: 0.8 };
+    }
+    
+    // Default to descriptive
+    return { type: 'DESCRIPTIVE', confidence: 0.6 };
   }
 
   /**
@@ -361,21 +532,72 @@ class OCRPostProcessingService {
   }
 
   /**
-   * Extract MCQ options from text
+   * Extract MCQ options with enhanced validation
    */
   extractOptions(text) {
     const options = [];
-    const optionPattern = /([A-D])\)\s*(.+?)(?=\s*[A-D]\)|$)/gi;
-    let match;
+    const patterns = [
+      /([A-E])\)\s*(.+?)(?=\s*[A-E]\)|$)/gi,          // A) option
+      /([A-E])\.\s*(.+?)(?=\s*[A-E]\.|$)/gi,          // A. option
+      /([A-E])\:\s*(.+?)(?=\s*[A-E]\:|$)/gi,          // A: option
+      /\(([A-E])\)\s*(.+?)(?=\s*\([A-E]\)|$)/gi       // (A) option
+    ];
     
-    while ((match = optionPattern.exec(text)) !== null) {
-      options.push({
-        label: match[1].toUpperCase(),
-        text: this.cleanOptionText(match[2])
-      });
+    let bestOptions = [];
+    let maxValidOptions = 0;
+    
+    // Try each pattern and use the best result
+    for (const pattern of patterns) {
+      const currentOptions = [];
+      let match;
+      
+      while ((match = pattern.exec(text)) !== null) {
+        const label = match[1].toUpperCase();
+        const optionText = this.cleanOptionText(match[2]);
+        
+        // Validate option text
+        if (this.isValidOption(optionText)) {
+          currentOptions.push({
+            label: label,
+            text: optionText,
+            position: match.index
+          });
+        }
+      }
+      
+      // Use this pattern if it gives more valid options
+      if (currentOptions.length > maxValidOptions) {
+        maxValidOptions = currentOptions.length;
+        bestOptions = currentOptions;
+      }
     }
     
-    return options;
+    // Sort options by position and label to maintain order
+    return bestOptions.sort((a, b) => a.label.charCodeAt(0) - b.label.charCodeAt(0));
+  }
+
+  /**
+   * Validate if text is a reasonable option
+   */
+  isValidOption(text) {
+    if (!text || text.length < 1 || text.length > 300) {
+      return false;
+    }
+    
+    // Check for common invalid patterns
+    const invalidPatterns = [
+      /^[^a-zA-Z0-9]*$/,  // Only special characters
+      /^[.\-_\s]+$/,      // Only separators
+      /^\d+\s*$$/,        // Only numbers
+    ];
+    
+    for (const pattern of invalidPatterns) {
+      if (pattern.test(text)) {
+        return false;
+      }
+    }
+    
+    return true;
   }
 
   /**
@@ -400,47 +622,95 @@ class OCRPostProcessingService {
   }
 
   /**
-   * Clean question text
+   * Clean question text with enhanced processing
    */
   cleanQuestionText(text) {
     return text
-      .replace(/^\d+\.?\s*/, '') // Remove question numbers
-      .replace(/^Q\.?\s*\d*\.?\s*/i, '') // Remove Q prefixes
+      // Remove question numbers and prefixes
+      .replace(/^(?:Q\.?\s*\d*\.?\s*|Question\s+\d+\s*[\.\:\-]?\s*|\d+\s*\.(?!\d)\s*)/i, '')
+      
+      // Remove trailing option indicators that got mixed in
+      .replace(/\s*[A-E]\s*[\)\.\:]\s*.*$/i, '')
+      
+      // Clean up whitespace and punctuation
+      .replace(/\s+/g, ' ')
+      .replace(/^\s*[\.\-\:]\s*/, '') // Remove leading punctuation
+      
+      // Ensure proper sentence structure
+      .replace(/([.!?])\s*([a-z])/g, '$1 $2') // Space after punctuation
+      
       .trim();
   }
 
   /**
-   * Clean option text
+   * Clean option text with enhanced processing  
    */
   cleanOptionText(text) {
     return text
+      // Remove trailing option markers that might have been captured
+      .replace(/\s*[A-E]\s*[\)\.\:]\s*$/i, '')
+      
+      // Clean up line breaks and excessive spacing
       .replace(/\n/g, ' ')
       .replace(/\s+/g, ' ')
+      
+      // Remove leading/trailing punctuation artifacts
+      .replace(/^[\.\-\:\)]+\s*/, '')
+      .replace(/\s*[\.\-\:]+$/, '')
+      
+      // Fix common OCR issues in options
+      .replace(/\bi\b/g, 'I') // Standalone 'i' should be 'I'
+      .replace(/\bo\b/g, '0') // Standalone 'o' might be '0' in math
+      
       .trim();
   }
 
   /**
-   * Calculate confidence for MCQ questions
+   * Calculate confidence for MCQ questions with enhanced metrics
    */
   calculateMCQConfidence(questionData) {
-    let confidence = 0.5;
+    let confidence = 0.4; // Base confidence
     
-    // Check for proper option count
-    if (questionData.options.length >= 2 && questionData.options.length <= 5) {
-      confidence += 0.2;
+    // Check for proper option count (2-5 is reasonable for MCQ)
+    const optionCount = questionData.options.length;
+    if (optionCount >= 2 && optionCount <= 5) {
+      confidence += 0.3;
+      if (optionCount === 4) confidence += 0.1; // Bonus for typical 4-option MCQ
+    } else if (optionCount > 5) {
+      confidence -= 0.2; // Penalty for too many options
     }
     
     // Check for question indicators
-    if (/\?/.test(questionData.questionText)) {
+    if (/[?]/.test(questionData.questionText)) {
       confidence += 0.1;
     }
     
-    // Check for option quality
-    const avgOptionLength = questionData.options.reduce((sum, opt) => 
-      sum + opt.text.length, 0) / questionData.options.length;
-    
-    if (avgOptionLength > 5 && avgOptionLength < 50) {
+    // Check for MCQ keywords
+    const mcqKeywords = /\b(choose|select|which|best|most|correct|appropriate|following)\b/i;
+    if (mcqKeywords.test(questionData.questionText)) {
       confidence += 0.1;
+    }
+    
+    // Check option quality
+    const validOptions = questionData.options.filter(opt => 
+      opt.text.length > 3 && opt.text.length < 150 && 
+      !opt.text.match(/^[^a-zA-Z0-9]*$/) // Not just special characters
+    );
+    
+    const optionQuality = validOptions.length / questionData.options.length;
+    confidence += optionQuality * 0.2;
+    
+    // Check for balanced option lengths (good MCQs have similar length options)
+    if (questionData.options.length > 1) {
+      const lengths = questionData.options.map(opt => opt.text.length);
+      const avgLength = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+      const variance = lengths.reduce((sum, len) => sum + Math.pow(len - avgLength, 2), 0) / lengths.length;
+      const stdDev = Math.sqrt(variance);
+      
+      // Lower standard deviation indicates more balanced options
+      if (stdDev < avgLength * 0.5) {
+        confidence += 0.05;
+      }
     }
     
     return Math.min(confidence, 1.0);
@@ -469,7 +739,8 @@ class OCRPostProcessingService {
    * Validate content quality and consistency
    */
   validateContent(structuredData, confidence = {}) {
-    return structuredData.map(question => {
+    // First pass - basic validation
+    let validatedData = structuredData.map(question => {
       const validation = this.validateQuestion(question, confidence);
       return {
         ...question,
@@ -477,61 +748,128 @@ class OCRPostProcessingService {
         confidence: Math.min(question.confidence * validation.score, 1.0)
       };
     });
+    
+    // Second pass - cross-question validation and cleanup
+    validatedData = this.performCrossValidation(validatedData);
+    
+    // Third pass - remove obviously invalid questions
+    return validatedData.filter(question => this.shouldKeepQuestion(question));
   }
 
   /**
-   * Validate individual question
+   * Cross-validation between questions to catch edge cases
    */
-  validateQuestion(question, confidence) {
-    const validation = {
-      score: 1.0,
-      issues: [],
-      suggestions: []
-    };
-    
-    // Validate question text
-    if (question.questionText.length < 10) {
-      validation.score *= 0.7;
-      validation.issues.push('Question text too short');
-      validation.suggestions.push('Consider combining with nearby text');
-    }
-    
-    // Type-specific validation
-    if (question.type === 'MCQ') {
-      this.validateMCQ(question, validation);
-    } else if (question.type === 'FIB') {
-      this.validateFIB(question, validation);
-    }
-    
-    return validation;
+  performCrossValidation(questions) {
+    return questions.map((question, index) => {
+      const updatedQuestion = { ...question };
+      
+      // Check for duplicate questions
+      const duplicates = questions.filter((q, i) => 
+        i !== index && this.areQuestionsSimilar(question, q)
+      );
+      
+      if (duplicates.length > 0) {
+        updatedQuestion.validation.issues.push('Potential duplicate question detected');
+        updatedQuestion.confidence *= 0.7;
+      }
+      
+      // Check for questions that are actually options from previous question
+      if (index > 0) {
+        const prevQuestion = questions[index - 1];
+        if (this.looksLikeOption(question, prevQuestion)) {
+          updatedQuestion.validation.issues.push('May be misidentified option');
+          updatedQuestion.confidence *= 0.3;
+        }
+      }
+      
+      // Validate question length relative to options
+      if (question.type === 'MCQ' && question.options) {
+        const avgOptionLength = question.options.reduce((sum, opt) => 
+          sum + opt.text.length, 0) / question.options.length;
+        
+        if (question.questionText.length < avgOptionLength * 0.3) {
+          updatedQuestion.validation.issues.push('Question too short relative to options');
+          updatedQuestion.confidence *= 0.6;
+        }
+      }
+      
+      return updatedQuestion;
+    });
   }
 
   /**
-   * Validate MCQ question
+   * Check if two questions are similar (potential duplicates)
    */
-  validateMCQ(question, validation) {
-    if (!question.options || question.options.length < 2) {
-      validation.score *= 0.5;
-      validation.issues.push('Insufficient options for MCQ');
-      validation.suggestions.push('Check for missing option text');
-    }
+  areQuestionsSimilar(q1, q2) {
+    if (!q1.questionText || !q2.questionText) return false;
     
-    if (question.options && question.options.length > 5) {
-      validation.score *= 0.8;
-      validation.issues.push('Too many options for typical MCQ');
-      validation.suggestions.push('Verify option extraction accuracy');
-    }
+    const text1 = q1.questionText.toLowerCase().replace(/\s+/g, ' ').trim();
+    const text2 = q2.questionText.toLowerCase().replace(/\s+/g, ' ').trim();
+    
+    // Simple similarity check - can be enhanced with more sophisticated algorithms
+    const similarity = this.calculateTextSimilarity(text1, text2);
+    return similarity > 0.8;
   }
 
   /**
-   * Validate Fill-in-the-Blank question
+   * Check if a question looks like it should be an option
    */
-  validateFIB(question, validation) {
-    if (!question.blanks || question.blanks.length === 0) {
-      validation.score *= 0.3;
-      validation.issues.push('No blanks detected for FIB question');
-      validation.suggestions.push('Check blank pattern recognition');
+  looksLikeOption(question, prevQuestion) {
+    if (!question.questionText || question.questionText.length > 100) {
+      return false;
     }
+    
+    // Check if it starts with option-like patterns
+    const optionPatterns = [
+      /^[A-E]\s*[\)\.\:]/,
+      /^(All of the above|None of the above|Both A and B)/i,
+      /^(True|False|Yes|No)$/i
+    ];
+    
+    return optionPatterns.some(pattern => pattern.test(question.questionText.trim()));
+  }
+
+  /**
+   * Decide whether to keep a question based on validation results
+   */
+  shouldKeepQuestion(question) {
+    // Remove questions with very low confidence
+    if (question.confidence < 0.2) {
+      return false;
+    }
+    
+    // Remove questions that are too short to be meaningful
+    if (!question.questionText || question.questionText.length < 10) {
+      return false;
+    }
+    
+    // Remove questions that are just punctuation or numbers
+    if (/^[^a-zA-Z]*$/.test(question.questionText)) {
+      return false;
+    }
+    
+    // Remove MCQ questions without valid options
+    if (question.type === 'MCQ' && (!question.options || question.options.length < 2)) {
+      return false;
+    }
+    
+    return true;
+  }
+
+  /**
+   * Calculate text similarity using simple algorithm
+   */
+  calculateTextSimilarity(text1, text2) {
+    if (text1 === text2) return 1.0;
+    
+    const len1 = text1.length;
+    const len2 = text2.length;
+    const maxLen = Math.max(len1, len2);
+    
+    if (maxLen === 0) return 1.0;
+    
+    const editDistance = this.countCorrections(text1, text2);
+    return 1.0 - (editDistance / maxLen);
   }
 
   /**
