@@ -59,7 +59,7 @@ const registerUser = async (req, res) => {
 
   } catch (error) {
     console.error('Registration error:', error);
-    
+
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({
@@ -118,6 +118,14 @@ const loginUser = async (req, res) => {
     // Generate token
     const token = generateToken(user._id);
 
+    // Set JWT as HTTP-only cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
     res.status(200).json({
       success: true,
       message: 'Login successful',
@@ -128,13 +136,49 @@ const loginUser = async (req, res) => {
           email: user.email,
           role: user.role,
           lastLogin: user.lastLogin
-        },
-        token
+        }
       }
     });
 
   } catch (error) {
     console.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+/**
+ * Get current user from session (cookie)
+ * @route GET /api/auth/me
+ * @access Private
+ */
+const getCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    res.status(200).json({
+      success: true,
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isActive: user.isActive,
+          lastLogin: user.lastLogin,
+          createdAt: user.createdAt
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get current user error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -150,7 +194,7 @@ const loginUser = async (req, res) => {
 const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -220,7 +264,7 @@ const updateProfile = async (req, res) => {
 
   } catch (error) {
     console.error('Update profile error:', error);
-    
+
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({
@@ -288,5 +332,6 @@ module.exports = {
   loginUser,
   getUserProfile,
   updateProfile,
-  changePassword
+  changePassword,
+  getCurrentUser
 };

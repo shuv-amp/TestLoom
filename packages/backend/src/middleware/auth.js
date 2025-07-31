@@ -7,11 +7,14 @@ const User = require('../models/userModel');
  */
 const authenticateToken = async (req, res, next) => {
   try {
-    // Get token from header
+    // Get token from header or cookie
+    let token = null;
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.startsWith('Bearer ') 
-      ? authHeader.substring(7) 
-      : null;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+    }
 
     if (!token) {
       return res.status(401).json({
@@ -22,7 +25,7 @@ const authenticateToken = async (req, res, next) => {
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     // Check if user still exists
     const user = await User.findById(decoded.userId);
     if (!user) {
@@ -51,14 +54,14 @@ const authenticateToken = async (req, res, next) => {
 
   } catch (error) {
     console.error('Authentication error:', error);
-    
+
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({
         success: false,
         message: 'Invalid token.'
       });
     }
-    
+
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({
         success: false,

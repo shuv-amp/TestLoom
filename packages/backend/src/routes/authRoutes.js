@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registerUser, loginUser, getUserProfile, updateProfile, changePassword } = require('../controllers/authController');
+const { registerUser, loginUser, getUserProfile, updateProfile, changePassword, getCurrentUser } = require('../controllers/authController');
 const { authenticateToken } = require('../middleware/auth');
 const { validateRegistration, validateLogin, validatePasswordChange, validateProfileUpdate } = require('../middleware/validation');
 
@@ -33,5 +33,10 @@ router.put('/profile', authenticateToken, validateProfileUpdate, updateProfile);
 // @desc    Change user password
 // @access  Private
 router.put('/password', authenticateToken, validatePasswordChange, changePassword);
+
+// @route   GET /api/auth/me
+// @desc    Get current user from session (cookie)
+// @access  Private
+router.get('/me', authenticateToken, getCurrentUser);
 
 module.exports = router;

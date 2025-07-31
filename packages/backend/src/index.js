@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 const connectDB = require('./config/database');
 const http = require('http');
@@ -10,6 +11,7 @@ const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const ocrRoutes = require('./routes/ocrRoutes');
 const questionRoutes = require('./routes/questionRoutes');
+const forumRoutes = require('./routes/forumRoutes');
 
 // Initialize Express app
 const app = express();
@@ -29,6 +31,7 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -51,11 +54,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ocr', ocrRoutes);
 app.use('/api/questions', questionRoutes);
+app.use('/api/forums', forumRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('Global error handler:', err);
-  
+
   res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Internal server error',
