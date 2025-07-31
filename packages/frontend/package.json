@@ -17,6 +17,8 @@
     "postinstall": "mkdir -p .data/content && pnpm nuxt-scripts approve-builds --yes || exit 0"
   },
   "dependencies": {
+    "@headlessui/vue": "^1.7.23",
+    "@heroicons/vue": "^2.2.0",
     "@nuxt/content": "3.6.1",
     "@nuxt/eslint": "1.4.1",
     "@nuxt/fonts": "0.11.4",
@@ -25,10 +27,13 @@
     "@nuxt/scripts": "0.11.8",
     "@nuxt/test-utils": "3.19.1",
     "@nuxt/ui": "3.2.0",
+    "@pinia/nuxt": "^0.11.2",
     "@unhead/vue": "^2.0.11",
     "better-sqlite3": "^11.10.0",
     "eslint": "^9.30.0",
+    "marked": "^16.1.1",
     "nuxt": "^3.17.5",
+    "pinia": "^3.0.3",
     "socket.io-client": "^4.8.1",
     "typescript": "^5.8.3",
     "vue": "^3.5.17",

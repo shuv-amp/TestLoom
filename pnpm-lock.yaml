@@ -60,6 +60,9 @@ importers:
       bcryptjs:
         specifier: ^3.0.2
         version: 3.0.2
+      cookie-parser:
+        specifier: ^1.4.7
+        version: 1.4.7
       cors:
         specifier: ^2.8.5
         version: 2.8.5
@@ -69,6 +72,9 @@ importers:
       express:
         specifier: ^4.21.2
         version: 4.21.2
+      express-validator:
+        specifier: ^7.2.1
+        version: 7.2.1
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
@@ -122,6 +128,12 @@ importers:
 
   packages/frontend:
     dependencies:
+      '@headlessui/vue':
+        specifier: ^1.7.23
+        version: 1.7.23(vue@3.5.17(typescript@5.8.3))
+      '@heroicons/vue':
+        specifier: ^2.2.0
+        version: 2.2.0(vue@3.5.17(typescript@5.8.3))
       '@nuxt/content':
         specifier: 3.6.1
         version: 3.6.1(better-sqlite3@11.10.0)(magicast@0.3.5)
@@ -146,6 +158,9 @@ importers:
       '@nuxt/ui':
         specifier: 3.2.0
         version: 3.2.0(@babel/parser@7.28.0)(@netlify/blobs@9.1.2)(db0@0.3.2(better-sqlite3@11.10.0))(embla-carousel@8.6.0)(idb-keyval@6.2.2)(ioredis@5.6.1)(jwt-decode@4.0.0)(magicast@0.3.5)(typescript@5.8.3)(valibot@1.1.0(typescript@5.8.3))(vite@6.3.5(@types/node@20.19.8)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.43.1)(yaml@2.8.0))(vue-router@4.5.1(vue@3.5.17(typescript@5.8.3)))(vue@3.5.17(typescript@5.8.3))(zod@3.25.76)
+      '@pinia/nuxt':
+        specifier: ^0.11.2
+        version: 0.11.2(magicast@0.3.5)(pinia@3.0.3(typescript@5.8.3)(vue@3.5.17(typescript@5.8.3)))
       '@unhead/vue':
         specifier: ^2.0.11
         version: 2.0.12(vue@3.5.17(typescript@5.8.3))
@@ -155,9 +170,15 @@ importers:
       eslint:
         specifier: ^9.30.0
         version: 9.31.0(jiti@2.4.2)
+      marked:
+        specifier: ^16.1.1
+        version: 16.1.1
       nuxt:
         specifier: ^3.17.5
         version: 3.17.7(@netlify/blobs@9.1.2)(@parcel/watcher@2.5.1)(@types/node@20.19.8)(@vue/compiler-sfc@3.5.17)(better-sqlite3@11.10.0)(db0@0.3.2(better-sqlite3@11.10.0))(eslint@9.31.0(jiti@2.4.2))(idb-keyval@6.2.2)(ioredis@5.6.1)(lightningcss@1.30.1)(magicast@0.3.5)(optionator@0.9.4)(rollup@4.45.1)(terser@5.43.1)(typescript@5.8.3)(vite@6.3.5(@types/node@20.19.8)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.43.1)(yaml@2.8.0))(yaml@2.8.0)
+      pinia:
+        specifier: ^3.0.3
+        version: 3.0.3(typescript@5.8.3)(vue@3.5.17(typescript@5.8.3))
       socket.io-client:
         specifier: ^4.8.1
         version: 4.8.1
@@ -997,6 +1018,17 @@ packages:
   '@floating-ui/vue@1.1.7':
     resolution: {integrity: sha512-idmAtbAIigGXN2SI5gItiXYBYtNfDTP9yIiObxgu13dgtG7ARCHlNfnR29GxP4LI4o13oiwsJ8wVgghj1lNqcw==}
 
+  '@headlessui/vue@1.7.23':
+    resolution: {integrity: sha512-JzdCNqurrtuu0YW6QaDtR2PIYCKPUWq28csDyMvN4zmGccmE7lz40Is6hc3LA4HFeCI7sekZ/PQMTNmn9I/4Wg==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      vue: ^3.2.0
+
+  '@heroicons/vue@2.2.0':
+    resolution: {integrity: sha512-G3dbSxoeEKqbi/DFalhRxJU4mTXJn7GwZ7ae8NuEQzd1bqdd0jAbdaBZlHPcvPD2xI1iGzNVB4k20Un2AguYPw==}
+    peerDependencies:
+      vue: '>= 3'
+
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
     engines: {node: '>=18.18.0'}
@@ -1697,6 +1729,11 @@ packages:
   '@parcel/watcher@2.5.1':
     resolution: {integrity: sha512-dfUnCxiN9H4ap84DvD2ubjw+3vUNpstxa0TneY/Paat8a3R4uQZDLSvWjmznAY/DoahqTHl9V46HF/Zs3F29pg==}
     engines: {node: '>= 10.0.0'}
+
+  '@pinia/nuxt@0.11.2':
+    resolution: {integrity: sha512-CgvSWpbktxxWBV7ModhAcsExsQZqpPq6vMYEe9DexmmY6959ev8ukL4iFhr/qov2Nb9cQAWd7niFDnaWkN+FHg==}
+    peerDependencies:
+      pinia: ^3.0.3
 
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -2435,6 +2472,9 @@ packages:
 
   '@vue/devtools-api@6.6.4':
     resolution: {integrity: sha512-sGhTPMuXqZ1rVOk32RylztWkfXTRhuS7vgAKv0zjqk8gbsHkJ7xfFf+jbySxt7tWObEJwyKaHMikV/WGDiQm8g==}
+
+  '@vue/devtools-api@7.7.7':
+    resolution: {integrity: sha512-lwOnNBH2e7x1fIIbVT7yF5D+YWhqELm55/4ZKf45R9T8r9dE2AIOy8HKjfqzGsoTHFbWbr337O4E0A0QADnjBg==}
 
   '@vue/devtools-core@7.7.7':
     resolution: {integrity: sha512-9z9TLbfC+AjAi1PQyWX+OErjIaJmdFlbDHcD+cAMYKY6Bh5VlsAtCeGyRMrXwIlMEQPukvnWt3gZBLwTAIMKzQ==}
@@ -3228,6 +3268,10 @@ packages:
 
   cookie-es@2.0.0:
     resolution: {integrity: sha512-RAj4E421UYRgqokKUmotqAwuplYw15qtdXfY+hGzgCJ/MBjCVZcSoHK/kH9kocfjRjcDME7IiDWR/1WX1TM2Pg==}
+
+  cookie-parser@1.4.7:
+    resolution: {integrity: sha512-nGUvgXnotP3BsjiLX2ypbQnWoGUPIIfHQNZkkC668ntrzGWEZVW70HDEB1qnNGMicPje6EttlIgzo51YSwNQGw==}
+    engines: {node: '>= 0.8.0'}
 
   cookie-signature@1.0.6:
     resolution: {integrity: sha512-QADzlaHc8icV8I7vbaJXJwod9HWYp8uCqf1xa4OfNu1T7JVxQIrUgOWtHdNDtPiywmFbiS12VjotIXLrKM3orQ==}
@@ -4058,6 +4102,10 @@ packages:
   expect@30.0.4:
     resolution: {integrity: sha512-dDLGjnP2cKbEppxVICxI/Uf4YemmGMPNy0QytCbfafbpYk9AFQsxb8Uyrxii0RPK7FWgLGlSem+07WirwS3cFQ==}
     engines: {node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0}
+
+  express-validator@7.2.1:
+    resolution: {integrity: sha512-CjNE6aakfpuwGaHQZ3m8ltCG2Qvivd7RHtVMS/6nVxOM7xVGqr4bhflsm4+N5FP5zI7Zxp+Hae+9RE+o8e3ZOQ==}
+    engines: {node: '>= 8.0.0'}
 
   express@4.21.2:
     resolution: {integrity: sha512-28HqgMZAmih1Czt9ny7qr6ek2qddF4FclbMzwhCREB6OFfH+rXAnuNCwo1/wFvrtbgsQDb4kSbX9de9lFbrXnA==}
@@ -5526,6 +5574,11 @@ packages:
   markdown-table@3.0.4:
     resolution: {integrity: sha512-wiYz4+JrLyb/DqW2hkFJxP7Vd7JuTDm77fvbM8VfEQdmSMqcImWeeRbHwZjBjIFki/VaMK2BhFi7oUUZeM5bqw==}
 
+  marked@16.1.1:
+    resolution: {integrity: sha512-ij/2lXfCRT71L6u0M29tJPhP0bM5shLL3u5BePhFwPELj2blMJ6GDtD7PfJhRLhJ/c2UwrK17ySVcDzy2YHjHQ==}
+    engines: {node: '>= 20'}
+    hasBin: true
+
   math-intrinsics@1.1.0:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
     engines: {node: '>= 0.4'}
@@ -6333,6 +6386,15 @@ packages:
   pify@3.0.0:
     resolution: {integrity: sha512-C3FsVNH1udSEX48gGX1xfvwTWfsYWj5U+8/uK15BGzIGrKoUpghX8hWZwa/OFnakBiiVNmBvemTJR5mcy7iPcg==}
     engines: {node: '>=4'}
+
+  pinia@3.0.3:
+    resolution: {integrity: sha512-ttXO/InUULUXkMHpTdp9Fj4hLpD/2AoJdmAbAeW2yu1iy1k+pkFekQXw5VpC0/5p51IOR/jDaDRfRWRnMMsGOA==}
+    peerDependencies:
+      typescript: '>=4.4.4'
+      vue: ^2.7.0 || ^3.5.11
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   pirates@4.0.7:
     resolution: {integrity: sha512-TfySrs/5nm8fQJDcBDuUng3VOUKsd7S+zqvbOTiGXHfxX4wK31ard+hoNuvkicM/2YFzlpDgABOevKSsB4G/FA==}
@@ -7872,6 +7934,10 @@ packages:
   validate-npm-package-license@3.0.4:
     resolution: {integrity: sha512-DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==}
 
+  validator@13.12.0:
+    resolution: {integrity: sha512-c1Q0mCiPlgdTVVVIJIrBuxNicYE+t/7oKeI9MWLj3fh/uq2Pxh/3eeWbVZ4OcGW1TUf53At0njHw5SMdA3tmMg==}
+    engines: {node: '>= 0.10'}
+
   vary@1.1.2:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
@@ -9021,6 +9087,15 @@ snapshots:
     transitivePeerDependencies:
       - '@vue/composition-api'
       - vue
+
+  '@headlessui/vue@1.7.23(vue@3.5.17(typescript@5.8.3))':
+    dependencies:
+      '@tanstack/vue-virtual': 3.13.12(vue@3.5.17(typescript@5.8.3))
+      vue: 3.5.17(typescript@5.8.3)
+
+  '@heroicons/vue@2.2.0(vue@3.5.17(typescript@5.8.3))':
+    dependencies:
+      vue: 3.5.17(typescript@5.8.3)
 
   '@humanfs/core@0.19.1': {}
 
@@ -10437,6 +10512,13 @@ snapshots:
       '@parcel/watcher-win32-ia32': 2.5.1
       '@parcel/watcher-win32-x64': 2.5.1
 
+  '@pinia/nuxt@0.11.2(magicast@0.3.5)(pinia@3.0.3(typescript@5.8.3)(vue@3.5.17(typescript@5.8.3)))':
+    dependencies:
+      '@nuxt/kit': 3.17.7(magicast@0.3.5)
+      pinia: 3.0.3(typescript@5.8.3)(vue@3.5.17(typescript@5.8.3))
+    transitivePeerDependencies:
+      - magicast
+
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
@@ -11192,6 +11274,10 @@ snapshots:
       he: 1.2.0
 
   '@vue/devtools-api@6.6.4': {}
+
+  '@vue/devtools-api@7.7.7':
+    dependencies:
+      '@vue/devtools-kit': 7.7.7
 
   '@vue/devtools-core@7.7.7(vite@6.3.5(@types/node@20.19.8)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.43.1)(yaml@2.8.0))(vue@3.5.17(typescript@5.8.3))':
     dependencies:
@@ -12029,6 +12115,11 @@ snapshots:
   cookie-es@1.2.2: {}
 
   cookie-es@2.0.0: {}
+
+  cookie-parser@1.4.7:
+    dependencies:
+      cookie: 0.7.2
+      cookie-signature: 1.0.6
 
   cookie-signature@1.0.6: {}
 
@@ -13054,6 +13145,11 @@ snapshots:
       jest-message-util: 30.0.2
       jest-mock: 30.0.2
       jest-util: 30.0.2
+
+  express-validator@7.2.1:
+    dependencies:
+      lodash: 4.17.21
+      validator: 13.12.0
 
   express@4.21.2:
     dependencies:
@@ -15120,6 +15216,8 @@ snapshots:
 
   markdown-table@3.0.4: {}
 
+  marked@16.1.1: {}
+
   math-intrinsics@1.1.0: {}
 
   mdast-util-find-and-replace@3.0.2:
@@ -16261,6 +16359,13 @@ snapshots:
   pify@2.3.0: {}
 
   pify@3.0.0: {}
+
+  pinia@3.0.3(typescript@5.8.3)(vue@3.5.17(typescript@5.8.3)):
+    dependencies:
+      '@vue/devtools-api': 7.7.7
+      vue: 3.5.17(typescript@5.8.3)
+    optionalDependencies:
+      typescript: 5.8.3
 
   pirates@4.0.7: {}
 
@@ -18141,6 +18246,8 @@ snapshots:
     dependencies:
       spdx-correct: 3.2.0
       spdx-expression-parse: 3.0.1
+
+  validator@13.12.0: {}
 
   vary@1.1.2: {}
 
