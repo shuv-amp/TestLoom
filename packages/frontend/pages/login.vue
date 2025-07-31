@@ -47,6 +47,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useUserStore } from '~/stores/user'
 
 const email = ref('')
 const password = ref('')
@@ -54,6 +55,7 @@ const loading = ref(false)
 const showPassword = ref(false)
 
 const router = useRouter()
+const userStore = useUserStore()
 
 function togglePassword() {
   showPassword.value = !showPassword.value
@@ -66,14 +68,15 @@ async function handleLogin() {
   }
   loading.value = true
   try {
-    const res = await fetch('http://localhost:5000/api/auth/login', {
+    const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email.value, password: password.value })
+      body: JSON.stringify({ email: email.value, password: password.value }),
+      credentials: 'include'
     })
     const data = await res.json()
-    if (res.ok && data.data && data.data.token) {
-      localStorage.setItem('token', data.data.token)
+    if (res.ok && data.success) {
+      await userStore.fetchSession()
       router.push('/dashboard')
     } else {
       alert(data.message || 'Login failed')

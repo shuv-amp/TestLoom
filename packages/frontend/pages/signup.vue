@@ -67,6 +67,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useUserStore } from '~/stores/user'
 
 const name = ref('')
 const email = ref('')
@@ -76,6 +77,7 @@ const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 
 const router = useRouter()
+const userStore = useUserStore()
 
 function togglePassword() {
   showPassword.value = !showPassword.value
@@ -95,14 +97,15 @@ async function handleSignup() {
     return
   }
   try {
-    const res = await fetch('http://localhost:5000/api/auth/register', {
+    const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name.value, email: email.value, password: password.value })
+      body: JSON.stringify({ name: name.value, email: email.value, password: password.value }),
+      credentials: 'include'
     })
     const data = await res.json()
-    if (res.ok && data.data && data.data.token) {
-      localStorage.setItem('token', data.data.token)
+    if (res.ok && data.success) {
+      await userStore.fetchSession()
       router.push('/dashboard')
     } else {
       alert(data.message || 'Signup failed')
