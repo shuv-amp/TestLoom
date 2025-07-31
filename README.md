@@ -1,7 +1,8 @@
 <div align="center">
+  <img src="https://raw.githubusercontent.com/shuv-amp/TestLoom/main/docs/logo-transparent.png" alt="TestLoom Logo" width="400">
+  <h1>TestLoom </h1>
+  <h3><em>Next-Generation Educational Technology Platform</em></h3>
 
-# TestLoom 🎓
-### *Next-Generation Educational Technology Platform*
 
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.x-4FC08D?style=flat-square&logo=vue.js&logoColor=white)](https://vuejs.org/)
 [![Nuxt.js](https://img.shields.io/badge/Nuxt.js-3.x-00DC82?style=flat-square&logo=nuxt.js&logoColor=white)](https://nuxt.com/)
