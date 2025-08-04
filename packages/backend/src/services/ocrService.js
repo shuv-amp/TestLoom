@@ -1,31 +1,124 @@
-const { createWorker } = require('tesseract.js');
+const ultraEnhancedOCRService = require('./ultraEnhancedOCRService');
+const geminiQuestionParser = require('./aiQuestionParser');
+const enhancedTraditionalParser = require('./enhancedTraditionalParser');
 
 class OCRService {
   constructor() {
-    this.worker = null;
+    this.logger = console;
   }
 
-  async initialize() {
-    if (!this.worker) {
-      this.worker = await createWorker();
-      // No need for initialize or loadLanguage in latest Tesseract.js
-    }
-  }
-
-  async extractTextFromImage(imageBuffer) {
+  /**
+   * Main entry point for ultra-enhanced OCR and question parsing
+   */
+  async extractTextFromImage(imageBuffer, options = {}) {
     try {
-      await this.initialize();
-      const { data: { text } } = await this.worker.recognize(imageBuffer, {
-        lang: 'eng'
-      });
-      return text;
+      const startTime = Date.now();
+
+      // Use ultra-enhanced OCR service
+      const ocrResult = await ultraEnhancedOCRService.extractTextFromImage(imageBuffer, options);
+
+      this.logger.info(`Ultra OCR completed with confidence: ${ocrResult.confidence} using ${ocrResult.engine} (${ocrResult.variant})`);
+
+      return {
+        text: ocrResult.text,
+        confidence: ocrResult.confidence,
+        processingTime: Date.now() - startTime,
+        metadata: {
+          engine: ocrResult.engine,
+          variant: ocrResult.variant,
+          wordCount: ocrResult.wordCount,
+          preprocessingAnalysis: ocrResult.preprocessingAnalysis,
+          ultraProcessed: true
+        }
+      };
     } catch (error) {
-      console.error('OCR extraction error:', error);
-      throw new Error('Failed to extract text from image');
+      this.logger.error('Ultra OCR extraction error:', error);
+      throw new Error(`Ultra OCR extraction failed: ${error.message}`);
     }
   }
 
-  parseQuestions(rawText) {
+  /**
+   * Parse questions with Gemini AI-first approach and traditional fallback
+   */
+  async parseQuestions(rawText, options = {}) {
+    try {
+      const startTime = Date.now();
+
+      if (!rawText || rawText.trim().length < 20) {
+        return [];
+      }
+
+      let result = null;
+      let method = 'unknown';
+
+      // Try Gemini AI parsing first if API key is available
+      if (process.env.GEMINI_API_KEY) {
+        try {
+          this.logger.info('Attempting Gemini AI-powered question parsing...');
+          result = await geminiQuestionParser.parseQuestionsWithAI(rawText, options);
+          method = 'gemini';
+
+          // If Gemini parsing was successful and confident, use it
+          if (result.success && result.confidence > 0.7 && result.questions.length > 0) {
+            this.logger.info(`Gemini AI parsing successful with confidence: ${result.confidence}`);
+            return this.formatQuestionsForResponse(result.questions, {
+              method: 'gemini',
+              confidence: result.confidence,
+              processingTime: Date.now() - startTime,
+              geminiTokensUsed: result.tokensUsed
+            });
+          }
+        } catch (aiError) {
+          this.logger.warn('Gemini AI parsing failed, falling back to traditional parsing:', aiError.message);
+        }
+      } else {
+        this.logger.info('No Gemini API key found, using traditional parsing only');
+      }
+
+      // Fallback to enhanced traditional parsing
+      this.logger.info('Using enhanced traditional question parsing...');
+      result = enhancedTraditionalParser.parseQuestions(rawText, options);
+      method = 'traditional';
+
+      // If traditional parsing also failed, try the original parsing as last resort
+      if (!result.questions || result.questions.length === 0) {
+        this.logger.info('Enhanced traditional parsing failed, trying original parser...');
+        result = { questions: this.parseQuestionsOriginal(rawText), confidence: 0.5 };
+        method = 'original';
+      }
+
+      return this.formatQuestionsForResponse(result.questions, {
+        method,
+        confidence: result.confidence || 0.5,
+        processingTime: Date.now() - startTime
+      });
+
+    } catch (error) {
+      this.logger.error('Question parsing failed:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Format questions for consistent response structure
+   */
+  formatQuestionsForResponse(questions, metadata = {}) {
+    return questions.map((question, index) => ({
+      id: question.id || index + 1,
+      questionText: question.questionText,
+      questionType: question.questionType || 'MCQ',
+      options: question.options || {},
+      metadata: {
+        ...metadata,
+        confidence: question.confidence || metadata.confidence || 0.5
+      }
+    }));
+  }
+
+  /**
+   * Original parsing method as final fallback
+   */
+  parseQuestionsOriginal(rawText) {
     if (!rawText || rawText.trim().length === 0) {
       return [];
     }
@@ -104,10 +197,10 @@ class OCRService {
       if (match) {
         const questionText = match[1].trim();
         const options = [];
-        
+
         for (const optionPattern of optionPatterns) {
           const optionMatches = [...content.matchAll(optionPattern)];
-          
+
           if (optionMatches.length >= 2) {
             for (const optionMatch of optionMatches) {
               options.push({
@@ -121,7 +214,7 @@ class OCRService {
 
         if (options.length >= 2) {
           const detectedAnswer = this.detectCorrectAnswer(content, options);
-          
+
           return {
             id: questionId,
             questionType: 'MCQ',
@@ -137,7 +230,7 @@ class OCRService {
     for (const pattern of fibPatterns) {
       if (pattern.test(content)) {
         const blanks = this.extractBlanks(content);
-        
+
         return {
           id: questionId,
           questionType: 'FIB',
@@ -190,42 +283,42 @@ class OCRService {
 
   isDuplicateQuestion(existingQuestions, newQuestion) {
     const similarity = 0.8;
-    
+
     for (const existing of existingQuestions) {
       const similarityScore = this.calculateSimilarity(
         existing.questionText.toLowerCase(),
         newQuestion.questionText.toLowerCase()
       );
-      
+
       if (similarityScore > similarity) {
         return true;
       }
     }
-    
+
     return false;
   }
 
   calculateSimilarity(str1, str2) {
     const longer = str1.length > str2.length ? str1 : str2;
     const shorter = str1.length > str2.length ? str2 : str1;
-    
+
     if (longer.length === 0) return 1.0;
-    
+
     const editDistance = this.levenshteinDistance(longer, shorter);
     return (longer.length - editDistance) / longer.length;
   }
 
   levenshteinDistance(str1, str2) {
     const matrix = [];
-    
+
     for (let i = 0; i <= str2.length; i++) {
       matrix[i] = [i];
     }
-    
+
     for (let j = 0; j <= str1.length; j++) {
       matrix[0][j] = j;
     }
-    
+
     for (let i = 1; i <= str2.length; i++) {
       for (let j = 1; j <= str1.length; j++) {
         if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
@@ -239,7 +332,7 @@ class OCRService {
         }
       }
     }
-    
+
     return matrix[str2.length][str1.length];
   }
 
@@ -272,16 +365,16 @@ class OCRService {
 
   calculateConfidence(content, options) {
     let confidence = 0.5;
-    
+
     if (options && options.length >= 3) confidence += 0.2;
     if (options && options.length === 4) confidence += 0.1;
-    
+
     if (content.includes('?')) confidence += 0.1;
-    
+
     if (/\b(what|which|how|when|where|why|who)\b/i.test(content)) {
       confidence += 0.1;
     }
-    
+
     return Math.min(confidence, 1.0);
   }
 
@@ -307,14 +400,14 @@ class OCRService {
   postProcessQuestions(questions) {
     return questions.map((question, index) => {
       question.id = index + 1;
-      
+
       if (question.questionType === 'MCQ' && question.options) {
         question.options = question.options.map((option, optIndex) => ({
           ...option,
           id: `${question.id}_${optIndex + 1}`
         }));
       }
-      
+
       return question;
     });
   }
