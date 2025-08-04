@@ -5,6 +5,9 @@ packages:
   - docs
   - content
 
+ignoredBuiltDependencies:
+  - opencv4nodejs-prebuilt
+
 onlyBuiltDependencies:
   - '@parcel/watcher'
   - '@tailwindcss/oxide'
