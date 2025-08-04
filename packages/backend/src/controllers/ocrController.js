@@ -16,12 +16,19 @@ const calculateOverallConfidence = (questions) => {
 };
 
 const formatQuestionForVerification = (question) => {
-  // Only include id, questionText, and options for MCQ
+  // Always convert options to array for MCQ
+  let optionsArray = [];
   if (question.options) {
+    if (Array.isArray(question.options)) {
+      optionsArray = question.options.map(opt => ({ label: opt.label, text: opt.text }));
+    } else if (typeof question.options === 'object') {
+      // Convert object to array, preserving label and text
+      optionsArray = Object.entries(question.options).map(([label, text]) => ({ label, text }));
+    }
     return {
       id: question.id,
       questionText: question.questionText,
-      options: Array.isArray(question.options) ? question.options.map(opt => ({ label: opt.label, text: opt.text })) : []
+      options: optionsArray
     };
   }
   // For other types, only id and questionText
@@ -59,22 +66,36 @@ const uploadImage = async (req, res) => {
     }
 
     const imageBuffer = await fs.readFile(req.file.path);
-    
-    const rawText = await ocrService.extractTextFromImage(imageBuffer);
-    
-    const parsedQuestions = ocrService.parseQuestions(rawText);
+
+    // Enhanced OCR processing
+    console.log('Starting enhanced OCR processing...');
+    const ocrResult = await ocrService.extractTextFromImage(imageBuffer, {
+      subject: req.body.subject,
+      expectedQuestionCount: req.body.expectedQuestionCount
+    });
+
+    // Enhanced question parsing
+    console.log('Starting enhanced question parsing...');
+    const parsedQuestions = await ocrService.parseQuestions(ocrResult.text, {
+      subject: req.body.subject,
+      expectedQuestionCount: req.body.expectedQuestionCount
+    });
 
     await fs.unlink(req.file.path);
 
+    const processingTime = Date.now() - Date.now();
+
     res.json({
       success: true,
-      message: 'Image processed successfully',
+      message: 'Image processed successfully with enhanced OCR',
       data: {
         summary: {
           totalQuestionsFound: parsedQuestions.length,
           questionTypes: getQuestionTypeSummary(parsedQuestions),
           confidence: calculateOverallConfidence(parsedQuestions),
-          processingTime: Date.now() - Date.now()
+          processingTime,
+          ocrConfidence: ocrResult.confidence,
+          parsingMethod: parsedQuestions[0]?.metadata?.method || 'unknown'
         },
         questions: parsedQuestions.map(question => formatQuestionForVerification(question)),
         metadata: {
@@ -82,15 +103,17 @@ const uploadImage = async (req, res) => {
           fileSize: req.file.size,
           fileMimeType: req.file.mimetype,
           processedAt: new Date().toISOString(),
-          userId: req.user.id
+          userId: req.user.id,
+          ocrMetadata: ocrResult.metadata,
+          enhancedProcessing: true
         },
-        rawText: process.env.NODE_ENV === 'development' ? rawText : undefined
+        rawText: process.env.NODE_ENV === 'development' ? ocrResult.text : undefined
       }
     });
 
   } catch (error) {
-    console.error('OCR upload error:', error);
-    
+    console.error('Enhanced OCR upload error:', error);
+
     if (req.file && req.file.path) {
       try {
         await fs.unlink(req.file.path);
