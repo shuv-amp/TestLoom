@@ -77,6 +77,8 @@ async function handleLogin() {
     const data = await res.json()
     if (res.ok && data.success) {
       localStorage.setItem('token', data.data.accessToken); // Store new token
+      // Set token in default headers for future fetch requests
+      window.authToken = data.data.accessToken;
       await userStore.fetchSession(); // Update user store/session
       router.push('/dashboard'); // Redirect to dashboard
     } else {
@@ -87,5 +89,15 @@ async function handleLogin() {
   } finally {
     loading.value = false
   }
+}
+
+// Helper for authenticated fetch
+export function authFetch(url, options = {}) {
+  const token = window.authToken || localStorage.getItem('token');
+  options.headers = {
+    ...options.headers,
+    Authorization: token ? `Bearer ${token}` : ''
+  };
+  return fetch(url, options);
 }
 </script>
