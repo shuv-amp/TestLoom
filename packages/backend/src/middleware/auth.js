@@ -22,14 +22,21 @@ const authenticateToken = async (req, res, next) => {
     }
 
     // Verify access token
+    console.log('Raw JWT:', token);
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log('Decoded JWT:', decoded);
+    if (decoded.exp) {
+      const expDate = new Date(decoded.exp * 1000);
+      console.log('JWT expires at:', expDate.toISOString());
+    }
     // Attach user to the request
     req.user = { userId: decoded.userId };
 
     next();
 
   } catch (error) {
+    console.error('JWT verification error:', error);
+    console.log('Current server time:', new Date().toISOString());
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({
         success: false,
@@ -42,7 +49,6 @@ const authenticateToken = async (req, res, next) => {
         message: 'Invalid token.'
       });
     }
-    console.error('Authentication error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error during authentication.'

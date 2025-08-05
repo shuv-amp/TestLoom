@@ -76,6 +76,7 @@ async function handleLogin() {
     })
     const data = await res.json()
     if (res.ok && data.success) {
+      localStorage.setItem('token', data.data.accessToken); // Store new token
       await userStore.fetchSession()
       router.push('/dashboard')
     } else {

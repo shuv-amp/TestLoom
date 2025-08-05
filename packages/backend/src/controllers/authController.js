@@ -8,9 +8,17 @@ const crypto = require('crypto');
  * @returns {string} - JWT access token
  */
 const generateAccessToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, {
+  const now = Math.floor(Date.now() / 1000);
+  const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
     expiresIn: '15m' // Short-lived access token
   });
+  const decoded = jwt.decode(token);
+  console.log('Access token generated at:', new Date(now * 1000).toISOString());
+  console.log('Access token payload:', decoded);
+  if (decoded && decoded.exp) {
+    console.log('Access token expires at:', new Date(decoded.exp * 1000).toISOString());
+  }
+  return token;
 };
 
 /**
