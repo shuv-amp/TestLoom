@@ -77,7 +77,8 @@ async function handleLogin() {
     const data = await res.json()
     if (res.ok && data.success) {
       localStorage.setItem('token', data.data.accessToken); // Store new token
-      window.location.reload(); // Ensure all pages use the new token
+      await userStore.fetchSession(); // Update user store/session
+      router.push('/dashboard'); // Redirect to dashboard
     } else {
       alert(data.message || 'Login failed')
     }
