@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registerUser, loginUser, getUserProfile, updateProfile, changePassword, getCurrentUser } = require('../controllers/authController');
+const { registerUser, loginUser, refreshToken, logoutUser, getUserProfile, updateProfile, changePassword, getCurrentUser } = require('../controllers/authController');
 const { authenticateToken } = require('../middleware/auth');
 const { validateRegistration, validateLogin, validatePasswordChange, validateProfileUpdate } = require('../middleware/validation');
 
@@ -18,6 +18,16 @@ router.post('/register', validateRegistration, registerUser);
 // @desc    Login user
 // @access  Public
 router.post('/login', validateLogin, loginUser);
+
+// @route   POST /api/auth/refresh-token
+// @desc    Refresh access token
+// @access  Public (requires refresh token cookie)
+router.post('/refresh-token', refreshToken);
+
+// @route   POST /api/auth/logout
+// @desc    Logout user
+// @access  Private
+router.post('/logout', authenticateToken, logoutUser);
 
 // @route   GET /api/auth/profile
 // @desc    Get current user profile

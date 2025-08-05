@@ -76,8 +76,11 @@ async function handleLogin() {
     })
     const data = await res.json()
     if (res.ok && data.success) {
-      await userStore.fetchSession()
-      router.push('/dashboard')
+      localStorage.setItem('token', data.data.accessToken); // Store new token
+      // Set token in default headers for future fetch requests
+      window.authToken = data.data.accessToken;
+      await userStore.fetchSession(); // Update user store/session
+      router.push('/dashboard'); // Redirect to dashboard
     } else {
       alert(data.message || 'Login failed')
     }
@@ -86,5 +89,17 @@ async function handleLogin() {
   } finally {
     loading.value = false
   }
+}
+</script>
+
+<!-- Authenticated fetch helper (move outside <script setup>) -->
+<script>
+export function authFetch(url, options = {}) {
+  const token = window.authToken || localStorage.getItem('token');
+  options.headers = {
+    ...options.headers,
+    Authorization: token ? `Bearer ${token}` : ''
+  };
+  return fetch(url, options);
 }
 </script>
