@@ -52,29 +52,29 @@ const authenticateToken = async (req, res, next) => {
 
 /**
  * Middleware to check user role
- * @param {Array<string>} requiredRoles - Array of roles that are allowed access
+ * @param {string|Array<string>} requiredRoles - The role(s) that are allowed access
  */
-const authorizeRole = (requiredRoles) => {
+const authorizeRoles = (requiredRoles) => {
   return async (req, res, next) => {
     try {
       const user = await User.findById(req.user.userId);
-
       if (!user) {
         return res.status(404).json({
           success: false,
           message: 'User not found'
         });
       }
-
-      if (!requiredRoles.includes(user.role)) {
+      // Support both string and array
+      const allowed = Array.isArray(requiredRoles)
+        ? requiredRoles.includes(user.role)
+        : user.role === requiredRoles;
+      if (!allowed) {
         return res.status(403).json({
           success: false,
           message: `Access denied. User with role '${user.role}' is not authorized.`
         });
       }
-
       next();
-
     } catch (error) {
       console.error('Authorization error:', error);
       res.status(500).json({
@@ -87,5 +87,5 @@ const authorizeRole = (requiredRoles) => {
 
 module.exports = {
   authenticateToken,
-  authorizeRole
+  authorizeRoles
 };
