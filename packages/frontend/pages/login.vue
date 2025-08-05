@@ -90,8 +90,10 @@ async function handleLogin() {
     loading.value = false
   }
 }
+</script>
 
-// Helper for authenticated fetch
+<!-- Authenticated fetch helper (move outside <script setup>) -->
+<script>
 export function authFetch(url, options = {}) {
   const token = window.authToken || localStorage.getItem('token');
   options.headers = {
