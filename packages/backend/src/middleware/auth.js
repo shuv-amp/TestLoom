@@ -23,7 +23,7 @@ const authenticateToken = async (req, res, next) => {
 
     // Verify access token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
+    console.log('Decoded JWT:', decoded);
     // Attach user to the request
     req.user = { userId: decoded.userId };
 
