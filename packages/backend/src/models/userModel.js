@@ -38,6 +38,10 @@ const userSchema = new mongoose.Schema({
   },
   lastLogin: {
     type: Date
+  },
+  refreshToken: {
+    type: String,
+    select: false
   }
 }, {
   timestamps: true // Adds createdAt and updatedAt fields

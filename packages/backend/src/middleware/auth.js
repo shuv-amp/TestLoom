@@ -2,18 +2,16 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 
 /**
- * Middleware to verify JWT token and protect routes
+ * Middleware to verify JWT access token and protect routes
  * Adds user information to req.user if token is valid
  */
 const authenticateToken = async (req, res, next) => {
   try {
-    // Get token from header or cookie
     let token = null;
     const authHeader = req.headers.authorization;
+
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.substring(7);
-    } else if (req.cookies && req.cookies.token) {
-      token = req.cookies.token;
     }
 
     if (!token) {
@@ -23,84 +21,71 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Verify token
+    // Verify access token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Check if user still exists
-    const user = await User.findById(decoded.userId);
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token. User not found.'
-      });
-    }
-
-    // Check if user is active
-    if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'Account is deactivated.'
-      });
-    }
-
-    // Add user info to request
-    req.user = {
-      userId: user._id,
-      email: user.email,
-      role: user.role
-    };
+    // Attach user to the request
+    req.user = { userId: decoded.userId };
 
     next();
 
   } catch (error) {
-    console.error('Authentication error:', error);
-
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Token expired. Please refresh your token.'
+      });
+    }
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({
         success: false,
         message: 'Invalid token.'
       });
     }
-
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Token expired.'
-      });
-    }
-
+    console.error('Authentication error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'Internal server error during authentication.'
     });
   }
 };
 
 /**
- * Middleware to authorize based on user roles
- * @param {...string} roles - Allowed roles
+ * Middleware to check user role
+ * @param {Array<string>} requiredRoles - Array of roles that are allowed access
  */
-const authorizeRoles = (...roles) => {
-  return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({
+const authorizeRole = (requiredRoles) => {
+  return async (req, res, next) => {
+    try {
+      const user = await User.findById(req.user.userId);
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      if (!requiredRoles.includes(user.role)) {
+        return res.status(403).json({
+          success: false,
+          message: `Access denied. User with role '${user.role}' is not authorized.`
+        });
+      }
+
+      next();
+
+    } catch (error) {
+      console.error('Authorization error:', error);
+      res.status(500).json({
         success: false,
-        message: 'Authentication required'
+        message: 'Internal server error during authorization.'
       });
     }
-
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Insufficient permissions.'
-      });
-    }
-
-    next();
   };
 };
 
 module.exports = {
   authenticateToken,
-  authorizeRoles
+  authorizeRole
 };
