@@ -289,34 +289,61 @@ class EnhancedTraditionalParser {
         const options = this.extractOptionsFromText(content);
         if (options.length < 2) return null;
 
-        return {
+        // Try to detect correct answer
+        const correctAnswer = this.detectCorrectAnswer(content, options);
+
+        const result = {
             id: questionId,
             questionText: this.cleanQuestionText(questionText),
             questionType: 'MCQ',
             options: this.formatOptions(options)
         };
+
+        if (correctAnswer) {
+            result.correctAnswer = correctAnswer;
+        }
+
+        return result;
     }
 
     /**
      * Parse fill-in-the-blank question
      */
     parseFIBQuestion(content, questionId) {
-        return {
+        // Try to detect answer for FIB questions
+        const correctAnswer = this.detectFIBAnswer(content);
+
+        const result = {
             id: questionId,
             questionText: this.cleanQuestionText(content),
             questionType: 'FIB'
         };
+
+        if (correctAnswer) {
+            result.correctAnswer = correctAnswer;
+        }
+
+        return result;
     }
 
     /**
      * Parse descriptive question
      */
     parseDescriptiveQuestion(content, questionId) {
-        return {
+        // Try to detect answer for descriptive questions
+        const correctAnswer = this.detectDescriptiveAnswer(content);
+
+        const result = {
             id: questionId,
             questionText: this.cleanQuestionText(content),
             questionType: 'DESCRIPTIVE'
         };
+
+        if (correctAnswer) {
+            result.correctAnswer = correctAnswer;
+        }
+
+        return result;
     }
 
     /**
@@ -356,6 +383,75 @@ class EnhancedTraditionalParser {
             formatted[option.label] = option.text;
         }
         return formatted;
+    }
+
+    /**
+     * Detect correct answer for MCQ questions
+     */
+    detectCorrectAnswer(content, options) {
+        const answerPatterns = [
+            /answer[\s:]*([a-eA-E])/i,
+            /correct[\s:]*([a-eA-E])/i,
+            /solution[\s:]*([a-eA-E])/i,
+            /ans[\s:]*([a-eA-E])/i,
+            /\(([a-eA-E])\)\s*✓/i,
+            /([a-eA-E])\s*✓/i,
+            /([a-eA-E])\s*\*\*/i, // Bold marking
+            /\*\*([a-eA-E])\s*\)/i, // Bold option
+        ];
+
+        for (const pattern of answerPatterns) {
+            const match = content.match(pattern);
+            if (match) {
+                const answerLabel = match[1].toLowerCase();
+                if (options.some(opt => opt.label === answerLabel)) {
+                    return answerLabel;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Detect correct answer for FIB questions
+     */
+    detectFIBAnswer(content) {
+        const fibAnswerPatterns = [
+            /answer[\s:]+([^.\n]+)/i,
+            /correct[\s:]+([^.\n]+)/i,
+            /solution[\s:]+([^.\n]+)/i,
+            /ans[\s:]+([^.\n]+)/i,
+        ];
+
+        for (const pattern of fibAnswerPatterns) {
+            const match = content.match(pattern);
+            if (match) {
+                return match[1].trim();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Detect correct answer for descriptive questions
+     */
+    detectDescriptiveAnswer(content) {
+        const descriptiveAnswerPatterns = [
+            /answer[\s:]+([^.\n]{10,})/i,
+            /solution[\s:]+([^.\n]{10,})/i,
+            /explanation[\s:]+([^.\n]{10,})/i,
+        ];
+
+        for (const pattern of descriptiveAnswerPatterns) {
+            const match = content.match(pattern);
+            if (match) {
+                return match[1].trim();
+            }
+        }
+
+        return null;
     }
 
     /**

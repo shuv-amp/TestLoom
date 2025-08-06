@@ -28,13 +28,19 @@ const formatQuestionForVerification = (question) => {
     return {
       id: question.id,
       questionText: question.questionText,
-      options: optionsArray
+      questionType: question.questionType || 'MCQ',
+      options: optionsArray,
+      correctAnswer: question.correctAnswer || null,
+      confidence: question.confidence || question.metadata?.confidence || 0.5
     };
   }
   // For other types, only id and questionText
   return {
     id: question.id,
-    questionText: question.questionText
+    questionText: question.questionText,
+    questionType: question.questionType || 'DESCRIPTIVE',
+    correctAnswer: question.correctAnswer || null,
+    confidence: question.confidence || question.metadata?.confidence || 0.5
   };
 };
 
