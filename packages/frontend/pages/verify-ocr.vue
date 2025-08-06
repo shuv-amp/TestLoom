@@ -178,6 +178,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import authManager from '~/utils/auth'
 
 const router = useRouter()
 const route = useRoute()
@@ -226,7 +227,6 @@ const saveQuestions = async () => {
   successMessage.value = ''
 
   try {
-    const token = localStorage.getItem('token')
     const processedQuestions = questions.value.map(q => ({
       questionText: q.questionText,
       questionType: q.questionType || 'MCQ',
@@ -239,12 +239,8 @@ const saveQuestions = async () => {
       confidence: q.confidence || 0.8
     }))
 
-    const response = await fetch('http://localhost:5000/api/questions/finalize', {
+    const response = await authManager.authenticatedFetch('http://localhost:5000/api/questions/finalize', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
       body: JSON.stringify({
         questions: processedQuestions,
         metadata: {
@@ -257,7 +253,7 @@ const saveQuestions = async () => {
 
     const data = await response.json()
     
-    if (data.success) {
+    if (response.ok && data.success) {
       successMessage.value = `Successfully saved ${data.data.savedQuestions} question(s)!`
       setTimeout(() => {
         router.push('/dashboard')
@@ -275,8 +271,7 @@ const saveQuestions = async () => {
 }
 
 onMounted(() => {
-  const token = localStorage.getItem('token')
-  if (!token) {
+  if (!authManager.isAuthenticated()) {
     router.push('/login')
     return
   }

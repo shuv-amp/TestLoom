@@ -124,6 +124,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import authManager from '@/utils/auth.js'
 
 const router = useRouter()
 
@@ -141,13 +142,12 @@ const errorMessage = ref('')
 
 const fetchAvailableSubjects = async () => {
   try {
-    const token = localStorage.getItem('token')
+    const token = authManager.getAccessToken()
     const response = await fetch('http://localhost:5000/api/questions?limit=1000', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     })
-    
     const data = await response.json()
     if (data.success && data.data.questions) {
       const subjects = [...new Set(data.data.questions.map(q => q.subject).filter(Boolean))]
@@ -165,7 +165,7 @@ const updateQuestionCount = async () => {
   }
 
   try {
-    const token = localStorage.getItem('token')
+    const token = authManager.getAccessToken()
     let url = `http://localhost:5000/api/questions?subject=${encodeURIComponent(quizConfig.value.subject)}&limit=1000`
 
     const response = await fetch(url, {
@@ -179,8 +179,7 @@ const updateQuestionCount = async () => {
       availableQuestionCount.value = data.data.questions.length
     }
   } catch (error) {
-    console.error('Error fetching question count:', error)
-    availableQuestionCount.value = 0
+    console.error('Error updating question count:', error)
   }
 }
 
@@ -199,24 +198,45 @@ const startQuiz = async () => {
   errorMessage.value = ''
 
   try {
-    const token = localStorage.getItem('token')
-    let url = `http://localhost:5000/api/questions?subject=${encodeURIComponent(quizConfig.value.subject)}&limit=${quizConfig.value.numberOfQuestions}`
-
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+    // Get only the questions just saved in this session
+    const savedIds = JSON.parse(localStorage.getItem('lastSavedQuestionIds') || '[]')
+    let questions = []
+    if (savedIds.length > 0) {
+      // Fetch only by IDs
+      const token = authManager.getAccessToken()
+      const response = await fetch(`http://localhost:5000/api/questions/by-ids`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ids: savedIds })
+      })
+      const data = await response.json()
+      if (data.success && data.data.questions) {
+        questions = data.data.questions
       }
-    })
-    
-    const data = await response.json()
-    if (data.success && data.data.questions) {
+    } else {
+      // Fallback: fetch by subject (old behavior)
+      const token = authManager.getAccessToken()
+      let url = `http://localhost:5000/api/questions?subject=${encodeURIComponent(quizConfig.value.subject)}&limit=${quizConfig.value.numberOfQuestions}`
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      const data = await response.json()
+      if (data.success && data.data.questions) {
+        questions = data.data.questions
+      }
+    }
+    if (questions.length > 0) {
       localStorage.setItem('quizConfig', JSON.stringify(quizConfig.value))
-      localStorage.setItem('quizQuestions', JSON.stringify(data.data.questions))
+      localStorage.setItem('quizQuestions', JSON.stringify(questions))
       router.push('/quiz')
     } else {
       errorMessage.value = 'Failed to load questions'
     }
-
   } catch (error) {
     console.error('Error starting quiz:', error)
     errorMessage.value = 'Network error. Please try again.'

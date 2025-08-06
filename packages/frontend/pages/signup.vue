@@ -88,6 +88,7 @@ function toggleConfirmPassword() {
 }
 
 async function handleSignup() {
+  console.log('Signup button clicked', name.value, email.value, password.value)
   if(password.value !== cpassword.value){
     alert('Password did not match')
     return
