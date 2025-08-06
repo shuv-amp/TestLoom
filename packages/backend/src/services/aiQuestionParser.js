@@ -1,5 +1,7 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
+const CODE_BLOCK_REGEX = /```(?:json)?([\s\S]*?)```/i;
+
 class GeminiQuestionParser {
     constructor() {
         this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -29,15 +31,28 @@ class GeminiQuestionParser {
             const response = await result.response;
             const aiResultText = response.text();
 
-            // Parse JSON response
+            this.logger.debug('Raw Gemini AI response:', aiResultText);
+
+            // Remove code block markers if present
+            let cleanedResponse = aiResultText;
+            const codeBlockMatch = CODE_BLOCK_REGEX.exec(aiResultText);
+            if (codeBlockMatch) {
+                cleanedResponse = codeBlockMatch[1].trim();
+            }
+
+            // Try to extract JSON object
             let aiResult;
             try {
-                // Extract JSON from response (Gemini might include extra text)
-                const jsonMatch = aiResultText.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    aiResult = JSON.parse(jsonMatch[0]);
+                // Remove any trailing commas (common LLM issue)
+                cleanedResponse = cleanedResponse.replace(/,\s*([}\]])/g, '$1');
+                // Find the first and last curly braces
+                const firstCurly = cleanedResponse.indexOf('{');
+                const lastCurly = cleanedResponse.lastIndexOf('}');
+                if (firstCurly !== -1 && lastCurly !== -1) {
+                    const jsonStr = cleanedResponse.substring(firstCurly, lastCurly + 1);
+                    aiResult = JSON.parse(jsonStr);
                 } else {
-                    throw new Error('No JSON found in response');
+                    throw new Error('No JSON object found in response');
                 }
             } catch (parseError) {
                 this.logger.error('Failed to parse Gemini response as JSON:', parseError.message);
