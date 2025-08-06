@@ -23,6 +23,27 @@
 
       <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
         <h2 class="text-xl font-semibold text-gray-800 mb-4">Question Metadata</h2>
+        
+        <!-- Summary Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-blue-600">{{ questions.length }}</div>
+            <div class="text-sm text-gray-600">Questions Found</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-green-600">{{ questionsWithAnswers }}</div>
+            <div class="text-sm text-gray-600">Answers Detected</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-purple-600">{{ averageConfidence }}%</div>
+            <div class="text-sm text-gray-600">Avg Confidence</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-indigo-600">{{ mcqCount }}</div>
+            <div class="text-sm text-gray-600">MCQ Questions</div>
+          </div>
+        </div>
+        
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Subject *</label>
@@ -75,7 +96,12 @@
           </div>
 
           <div v-if="question.options && question.options.length > 0" class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Options</label>
+            <div class="flex justify-between items-center mb-2">
+              <label class="block text-sm font-medium text-gray-700">Options</label>
+              <div v-if="question.correctAnswer" class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+                AI detected answer: {{ question.correctAnswer.toUpperCase() }}
+              </div>
+            </div>
             <div class="space-y-2">
               <div 
                 v-for="(option, optIndex) in question.options" 
@@ -101,10 +127,24 @@
                 />
               </div>
             </div>
+            
+            <div class="mt-2 text-xs text-gray-500">
+              <span v-if="question.correctAnswer">
+                Selected Answer: <span class="font-medium text-blue-600">{{ question.correctAnswer.toUpperCase() }}</span>
+              </span>
+              <span v-else class="text-orange-600">No answer selected</span>
+            </div>
           </div>
 
-          <div class="text-sm text-gray-500">
-            Type: {{ question.questionType || 'MCQ' }}
+          <div class="text-sm text-gray-500 space-y-1">
+            <div>Type: {{ question.questionType || 'MCQ' }}</div>
+            <div v-if="question.confidence">
+              Confidence: <span class="font-medium" :class="{
+                'text-green-600': question.confidence > 0.8,
+                'text-yellow-600': question.confidence > 0.6 && question.confidence <= 0.8,
+                'text-red-600': question.confidence <= 0.6
+              }">{{ Math.round(question.confidence * 100) }}%</span>
+            </div>
           </div>
         </div>
       </div>
@@ -136,7 +176,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
@@ -150,6 +190,21 @@ const metadata = ref({
 const saving = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
+
+// Computed properties for statistics
+const questionsWithAnswers = computed(() => {
+  return questions.value.filter(q => q.correctAnswer).length
+})
+
+const averageConfidence = computed(() => {
+  if (questions.value.length === 0) return 0
+  const totalConfidence = questions.value.reduce((sum, q) => sum + (q.confidence || 0), 0)
+  return Math.round((totalConfidence / questions.value.length) * 100)
+})
+
+const mcqCount = computed(() => {
+  return questions.value.filter(q => q.questionType === 'MCQ' || !q.questionType).length
+})
 
 const removeQuestion = (index) => {
   questions.value.splice(index, 1)

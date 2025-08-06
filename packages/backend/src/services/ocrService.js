@@ -108,9 +108,12 @@ class OCRService {
       questionText: question.questionText,
       questionType: question.questionType || 'MCQ',
       options: question.options || {},
+      correctAnswer: question.correctAnswer || null,
+      confidence: question.confidence || metadata.confidence || 0.5,
       metadata: {
         ...metadata,
-        confidence: question.confidence || metadata.confidence || 0.5
+        confidence: question.confidence || metadata.confidence || 0.5,
+        hasDetectedAnswer: !!question.correctAnswer
       }
     }));
   }

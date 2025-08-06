@@ -91,6 +91,7 @@ INSTRUCTIONS:
 2. For each question, extract:
    - The question text (clean and complete)
    - All answer options (for MCQ)
+   - The correct answer
    - Question type (MCQ, FIB, DESCRIPTIVE)
 3. Handle OCR errors intelligently (fix obvious mistakes like "0" instead of "O", "rn" instead of "m")
 4. Ignore headers, footers, page numbers, and irrelevant text
@@ -100,6 +101,10 @@ QUESTION TYPES:
 - MCQ: Multiple choice with 2-5 options (a, b, c, d, e)
 - FIB: Fill in the blank (contains underscores, blanks, or "fill in" instructions)
 - DESCRIPTIVE: Open-ended questions requiring detailed answers
+
+ANSWER DETECTION:
+- Give answers to questions yourself using your reasoning skills
+- If you cannot determine a correct answer, omit the "correctAnswer" field entirely
 
 CRITICAL: You MUST return ONLY a valid JSON object with this EXACT structure:
 {
@@ -112,17 +117,20 @@ CRITICAL: You MUST return ONLY a valid JSON object with this EXACT structure:
         "b": "Server-side scripting", 
         "c": "Database management",
         "d": "UI design"
-      }
+      },
+      "correctAnswer": "b"
     }
   ],
   "metadata": {
     "totalQuestions": 1,
     "questionTypes": {"MCQ": 1},
-    "confidence": 0.9
+    "confidence": 0.9,
+    "answersDetected": 1
   }
 }
 
-For FIB and DESCRIPTIVE questions, omit the "options" field.
+For FIB and DESCRIPTIVE questions, omit the "options" field but include "correctAnswer" if found.
+If no correct answer is detected for a question, omit the "correctAnswer" field entirely.
 
 QUALITY STANDARDS:
 - Question text must be grammatically correct and complete
@@ -201,6 +209,11 @@ Remember: Return ONLY the JSON object, no other text.`;
             questionType: question.questionType
         };
 
+        // Add correct answer if provided
+        if (question.correctAnswer) {
+            validatedQuestion.correctAnswer = question.correctAnswer.toLowerCase();
+        }
+
         // Validate MCQ questions
         if (question.questionType === 'MCQ') {
             if (!question.options || typeof question.options !== 'object') {
@@ -225,6 +238,12 @@ Remember: Return ONLY the JSON object, no other text.`;
             }
 
             validatedQuestion.options = validOptions;
+
+            // Validate correct answer if provided
+            if (validatedQuestion.correctAnswer && !validOptions[validatedQuestion.correctAnswer]) {
+                this.logger.warn(`Correct answer ${validatedQuestion.correctAnswer} not found in options, removing`);
+                delete validatedQuestion.correctAnswer;
+            }
         }
 
         return validatedQuestion;
@@ -238,11 +257,18 @@ Remember: Return ONLY the JSON object, no other text.`;
 
         const baseConfidence = aiResult.metadata.confidence || 0.8;
         const questionCount = aiResult.questions?.length || 0;
+        const answersDetected = aiResult.metadata.answersDetected || 0;
 
         // Adjust based on question count (more questions = more confidence in parsing)
         let adjustedConfidence = baseConfidence;
         if (questionCount > 5) adjustedConfidence += 0.1;
         if (questionCount > 10) adjustedConfidence += 0.05;
+
+        // Bonus confidence for detected answers
+        if (answersDetected > 0) {
+            const answerRatio = answersDetected / Math.max(questionCount, 1);
+            adjustedConfidence += answerRatio * 0.1; // Up to 10% bonus
+        }
 
         return Math.min(adjustedConfidence, 1.0);
     }
