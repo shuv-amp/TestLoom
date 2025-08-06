@@ -45,14 +45,30 @@ class GeminiQuestionParser {
             try {
                 // Remove any trailing commas (common LLM issue)
                 cleanedResponse = cleanedResponse.replace(/,\s*([}\]])/g, '$1');
-                // Find the first and last curly braces
+
+                // Try code block extraction first
+                const codeBlockMatch = CODE_BLOCK_REGEX.exec(aiResultText);
+                if (codeBlockMatch) {
+                    cleanedResponse = codeBlockMatch[1].trim();
+                }
+
+                // Try to find JSON object in the cleaned response
                 const firstCurly = cleanedResponse.indexOf('{');
                 const lastCurly = cleanedResponse.lastIndexOf('}');
                 if (firstCurly !== -1 && lastCurly !== -1) {
                     const jsonStr = cleanedResponse.substring(firstCurly, lastCurly + 1);
                     aiResult = JSON.parse(jsonStr);
                 } else {
-                    throw new Error('No JSON object found in response');
+                    // Try to find JSON array if object not found
+                    const firstBracket = cleanedResponse.indexOf('[');
+                    const lastBracket = cleanedResponse.lastIndexOf(']');
+                    if (firstBracket !== -1 && lastBracket !== -1) {
+                        const jsonStr = cleanedResponse.substring(firstBracket, lastBracket + 1);
+                        aiResult = JSON.parse(jsonStr);
+                    } else {
+                        this.logger.error('Full Gemini response for debugging:', aiResultText);
+                        throw new Error('No JSON object or array found in response');
+                    }
                 }
             } catch (parseError) {
                 this.logger.error('Failed to parse Gemini response as JSON:', parseError.message);
