@@ -4,7 +4,7 @@ const optionSchema = new mongoose.Schema({
   label: {
     type: String,
     required: true,
-    enum: ['A', 'B', 'C', 'D', 'E']
+    enum: ['A', 'B', 'C', 'D', 'E', 'a', 'b', 'c', 'd', 'e']
   },
   text: {
     type: String,
@@ -46,7 +46,7 @@ const questionSchema = new mongoose.Schema({
   options: {
     type: [optionSchema],
     validate: {
-      validator: function(options) {
+      validator: function (options) {
         if (this.questionType === 'MCQ') {
           return options && options.length >= 2 && options.length <= 5;
         }
@@ -58,7 +58,7 @@ const questionSchema = new mongoose.Schema({
   blanks: {
     type: [blankSchema],
     validate: {
-      validator: function(blanks) {
+      validator: function (blanks) {
         if (this.questionType === 'FIB') {
           return blanks && blanks.length >= 1;
         }
@@ -70,7 +70,7 @@ const questionSchema = new mongoose.Schema({
   correctAnswer: {
     type: String,
     validate: {
-      validator: function(answer) {
+      validator: function (answer) {
         if (this.questionType === 'MCQ') {
           return this.options && this.options.some(opt => opt.label === answer);
         }
@@ -133,7 +133,7 @@ questionSchema.index({ subject: 1, chapter: 1, questionType: 1 });
 questionSchema.index({ createdBy: 1, createdAt: -1 });
 questionSchema.index({ tags: 1 });
 
-questionSchema.pre('save', function(next) {
+questionSchema.pre('save', function (next) {
   if (this.questionType === 'MCQ' && this.options) {
     const correctOptions = this.options.filter(opt => opt.isCorrect);
     if (correctOptions.length !== 1) {
@@ -141,17 +141,17 @@ questionSchema.pre('save', function(next) {
     }
     this.correctAnswer = correctOptions[0].label;
   }
-  
+
   if (this.isVerified && !this.verifiedAt) {
     this.verifiedAt = new Date();
   }
-  
+
   next();
 });
 
-questionSchema.methods.toJSON = function() {
+questionSchema.methods.toJSON = function () {
   const question = this.toObject();
-  
+
   if (question.questionType === 'MCQ') {
     question.options = question.options.map(opt => ({
       label: opt.label,
@@ -159,7 +159,7 @@ questionSchema.methods.toJSON = function() {
       isCorrect: opt.isCorrect
     }));
   }
-  
+
   return question;
 };
 
