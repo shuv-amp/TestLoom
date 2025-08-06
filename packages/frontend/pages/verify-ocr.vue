@@ -90,7 +90,7 @@
             <textarea 
               v-model="question.questionText"
               rows="3"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
               placeholder="Enter the question text..."
             ></textarea>
           </div>
@@ -116,13 +116,13 @@
                   v-model="question.correctAnswer"
                   class="text-blue-600 focus:ring-blue-500"
                 />
-                <label :for="`q${index}_opt${optIndex}`" class="text-sm font-medium text-gray-700 w-8">
+                <label :for="`q${index}_opt${optIndex}`" class="text-sm font-medium text-gray-900 w-8">
                   {{ option.label }})
                 </label>
                 <input 
                   v-model="option.text"
                   type="text"
-                  class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                   placeholder="Option text..."
                 />
               </div>
@@ -178,6 +178,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import authManager from '~/utils/auth'
 
 const router = useRouter()
 const route = useRoute()
@@ -226,7 +227,6 @@ const saveQuestions = async () => {
   successMessage.value = ''
 
   try {
-    const token = localStorage.getItem('token')
     const processedQuestions = questions.value.map(q => ({
       questionText: q.questionText,
       questionType: q.questionType || 'MCQ',
@@ -239,12 +239,8 @@ const saveQuestions = async () => {
       confidence: q.confidence || 0.8
     }))
 
-    const response = await fetch('http://localhost:5000/api/questions/finalize', {
+    const response = await authManager.authenticatedFetch('http://localhost:5000/api/questions/finalize', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
       body: JSON.stringify({
         questions: processedQuestions,
         metadata: {
@@ -257,7 +253,7 @@ const saveQuestions = async () => {
 
     const data = await response.json()
     
-    if (data.success) {
+    if (response.ok && data.success) {
       successMessage.value = `Successfully saved ${data.data.savedQuestions} question(s)!`
       setTimeout(() => {
         router.push('/dashboard')
@@ -275,8 +271,7 @@ const saveQuestions = async () => {
 }
 
 onMounted(() => {
-  const token = localStorage.getItem('token')
-  if (!token) {
+  if (!authManager.isAuthenticated()) {
     router.push('/login')
     return
   }

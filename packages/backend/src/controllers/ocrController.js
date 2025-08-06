@@ -45,6 +45,9 @@ const formatQuestionForVerification = (question) => {
 };
 
 const uploadImage = async (req, res) => {
+  console.log('uploadImage called')
+  console.log('req.file:', req.file)
+  console.log('req.body:', req.body)
   let responded = false;
   let aborted = false;
   function safeRespond(status, payload) {
