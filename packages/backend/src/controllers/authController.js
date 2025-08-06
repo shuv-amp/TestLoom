@@ -8,28 +8,44 @@ const crypto = require('crypto');
  * @returns {string} - JWT access token
  */
 const generateAccessToken = (userId) => {
-  const now = Math.floor(Date.now() / 1000);
-  const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: '15m' // Short-lived access token
-  });
-  const decoded = jwt.decode(token);
-  console.log('Access token generated at:', new Date(now * 1000).toISOString());
-  console.log('Access token payload:', decoded);
-  if (decoded && decoded.exp) {
-    console.log('Access token expires at:', new Date(decoded.exp * 1000).toISOString());
-  }
+  const token = jwt.sign(
+    {
+      userId,
+      type: 'access',
+      iat: Math.floor(Date.now() / 1000)
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
+      issuer: 'testloom-api',
+      audience: 'testloom-client'
+    }
+  );
   return token;
 };
 
 /**
- * Generate JWT Refresh Token
+ * Generate JWT Refresh Token with unique identifier
  * @param {string} userId - User ID to encode in token
- * @returns {string} - JWT refresh token
+ * @returns {object} - Object containing refresh token and token ID
  */
 const generateRefreshToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_REFRESH_SECRET, {
-    expiresIn: '7d' // Long-lived refresh token
-  });
+  const tokenId = crypto.randomUUID();
+  const token = jwt.sign(
+    {
+      userId,
+      tokenId,
+      type: 'refresh',
+      iat: Math.floor(Date.now() / 1000)
+    },
+    process.env.JWT_REFRESH_SECRET,
+    {
+      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+      issuer: 'testloom-api',
+      audience: 'testloom-client'
+    }
+  );
+  return { token, tokenId };
 };
 
 /**
@@ -42,16 +58,32 @@ const hashRefreshToken = (token) => {
 };
 
 /**
- * Set refresh token cookie
+ * Set secure refresh token cookie
  * @param {object} res - Express response object
  * @param {string} token - The refresh token
  */
 const setRefreshTokenCookie = (res, token) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+
   res.cookie('refreshToken', token, {
     httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'strict' : 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: '/api/auth'
+  });
+};
+
+/**
+ * Clear refresh token cookie
+ * @param {object} res - Express response object
+ */
+const clearRefreshTokenCookie = (res) => {
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    path: '/api/auth'
   });
 };
 
@@ -83,14 +115,28 @@ const registerUser = async (req, res) => {
 
     // Generate tokens
     const accessToken = generateAccessToken(user._id);
-    const refreshToken = generateRefreshToken(user._id);
+    const refreshTokenData = generateRefreshToken(user._id);
 
-    // Hash and save refresh token
-    user.refreshToken = hashRefreshToken(refreshToken);
+    // Hash and save refresh token with token ID
+    user.refreshTokens = [{
+      tokenId: refreshTokenData.tokenId,
+      token: hashRefreshToken(refreshTokenData.token),
+      createdAt: new Date(),
+      userAgent: req.get('User-Agent') || 'Unknown',
+      ipAddress: req.ip || req.connection.remoteAddress
+    }];
+
     await user.save();
 
-    // Set refresh token in cookie
-    setRefreshTokenCookie(res, refreshToken);
+    // Set refresh token in secure cookie
+    setRefreshTokenCookie(res, refreshTokenData.token);
+
+    // Set security headers
+    res.set({
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block'
+    });
 
     res.status(201).json({
       success: true,
@@ -102,7 +148,8 @@ const registerUser = async (req, res) => {
           email: user.email,
           role: user.role
         },
-        accessToken
+        accessToken,
+        expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m'
       }
     });
 
@@ -132,10 +179,10 @@ const registerUser = async (req, res) => {
  */
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, rememberMe = false } = req.body;
 
-    // Find user and include password and refreshToken fields
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password +refreshToken');
+    // Find user and include password and refreshTokens fields
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password +refreshTokens');
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -160,17 +207,39 @@ const loginUser = async (req, res) => {
       });
     }
 
-    // Generate tokens
-    const accessToken = generateAccessToken(user._id);
-    const refreshToken = generateRefreshToken(user._id);
+    // Clean up expired refresh tokens (keep only last 5 active sessions)
+    const now = new Date();
+    user.refreshTokens = user.refreshTokens.filter(rt => {
+      const tokenAge = now - rt.createdAt;
+      const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
+      return tokenAge < maxAge;
+    }).slice(-4); // Keep only 4 previous tokens, will add 1 new
 
-    // Hash and save refresh token
-    user.refreshToken = hashRefreshToken(refreshToken);
+    // Generate new tokens
+    const accessToken = generateAccessToken(user._id);
+    const refreshTokenData = generateRefreshToken(user._id);
+
+    // Add new refresh token to user
+    user.refreshTokens.push({
+      tokenId: refreshTokenData.tokenId,
+      token: hashRefreshToken(refreshTokenData.token),
+      createdAt: new Date(),
+      userAgent: req.get('User-Agent') || 'Unknown',
+      ipAddress: req.ip || req.connection.remoteAddress
+    });
+
     user.lastLogin = new Date();
     await user.save();
 
-    // Set refresh token in cookie
-    setRefreshTokenCookie(res, refreshToken);
+    // Set refresh token in secure cookie
+    setRefreshTokenCookie(res, refreshTokenData.token);
+
+    // Set security headers
+    res.set({
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block'
+    });
 
     res.status(200).json({
       success: true,
@@ -183,7 +252,8 @@ const loginUser = async (req, res) => {
           role: user.role,
           lastLogin: user.lastLogin
         },
-        accessToken
+        accessToken,
+        expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m'
       }
     });
 
@@ -197,7 +267,7 @@ const loginUser = async (req, res) => {
 };
 
 /**
- * Refresh access token
+ * Refresh access token using refresh token rotation
  * @route POST /api/auth/refresh-token
  * @access Public
  */
@@ -213,57 +283,118 @@ const refreshToken = async (req, res) => {
 
   try {
     // Verify refresh token
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, {
+      issuer: 'testloom-api',
+      audience: 'testloom-client'
+    });
+
+    // Ensure it's a refresh token
+    if (decoded.type !== 'refresh') {
+      throw new Error('Invalid token type');
+    }
 
     // Find user and check if refresh token is valid
-    const user = await User.findById(decoded.userId).select('+refreshToken');
-    if (!user || !user.refreshToken || user.refreshToken !== hashRefreshToken(refreshToken)) {
+    const user = await User.findById(decoded.userId).select('+refreshTokens');
+    if (!user) {
+      clearRefreshTokenCookie(res);
       return res.status(403).json({
         success: false,
-        message: 'Invalid refresh token'
+        message: 'User not found'
       });
     }
 
-    // Generate new access token
+    // Find the specific refresh token
+    const hashedToken = hashRefreshToken(refreshToken);
+    const tokenIndex = user.refreshTokens.findIndex(rt =>
+      rt.token === hashedToken && rt.tokenId === decoded.tokenId
+    );
+
+    if (tokenIndex === -1) {
+      // Possible token reuse attack - invalidate all tokens
+      user.refreshTokens = [];
+      await user.save();
+      clearRefreshTokenCookie(res);
+      return res.status(403).json({
+        success: false,
+        message: 'Invalid refresh token - all sessions terminated'
+      });
+    }
+
+    // Remove the used refresh token (rotation)
+    user.refreshTokens.splice(tokenIndex, 1);
+
+    // Generate new tokens
     const accessToken = generateAccessToken(user._id);
+    const newRefreshTokenData = generateRefreshToken(user._id);
+
+    // Add new refresh token
+    user.refreshTokens.push({
+      tokenId: newRefreshTokenData.tokenId,
+      token: hashRefreshToken(newRefreshTokenData.token),
+      createdAt: new Date(),
+      userAgent: req.get('User-Agent') || 'Unknown',
+      ipAddress: req.ip || req.connection.remoteAddress
+    });
+
+    await user.save();
+
+    // Set new refresh token in cookie
+    setRefreshTokenCookie(res, newRefreshTokenData.token);
 
     res.status(200).json({
       success: true,
-      message: 'Access token refreshed',
+      message: 'Tokens refreshed successfully',
       data: {
-        accessToken
+        accessToken,
+        expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m'
       }
     });
 
   } catch (error) {
     console.error('Refresh token error:', error);
+    clearRefreshTokenCookie(res);
+
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token expired. Please login again.'
+      });
+    }
+
     res.status(403).json({
       success: false,
-      message: 'Invalid or expired refresh token'
+      message: 'Invalid refresh token'
     });
   }
 };
 
 /**
- * Logout user
+ * Logout user from current session
  * @route POST /api/auth/logout
  * @access Private
  */
 const logoutUser = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const user = await User.findById(userId);
+    const { refreshToken } = req.cookies;
 
-    if (user) {
-      user.refreshToken = undefined;
-      await user.save();
+    if (refreshToken) {
+      // Decode to get token ID for targeted removal
+      try {
+        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+        const user = await User.findById(userId).select('+refreshTokens');
+
+        if (user && decoded.tokenId) {
+          // Remove only the current refresh token
+          user.refreshTokens = user.refreshTokens.filter(rt => rt.tokenId !== decoded.tokenId);
+          await user.save();
+        }
+      } catch (error) {
+        console.error('Error removing specific refresh token:', error);
+      }
     }
 
-    res.clearCookie('refreshToken', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
-    });
+    clearRefreshTokenCookie(res);
 
     res.status(200).json({
       success: true,
@@ -272,6 +403,37 @@ const logoutUser = async (req, res) => {
 
   } catch (error) {
     console.error('Logout error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+/**
+ * Logout user from all sessions
+ * @route POST /api/auth/logout-all
+ * @access Private
+ */
+const logoutAllSessions = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const user = await User.findById(userId).select('+refreshTokens');
+
+    if (user) {
+      user.refreshTokens = [];
+      await user.save();
+    }
+
+    clearRefreshTokenCookie(res);
+
+    res.status(200).json({
+      success: true,
+      message: 'Logged out from all sessions'
+    });
+
+  } catch (error) {
+    console.error('Logout all sessions error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -462,6 +624,7 @@ module.exports = {
   loginUser,
   refreshToken,
   logoutUser,
+  logoutAllSessions,
   getCurrentUser,
   getUserProfile,
   updateProfile,

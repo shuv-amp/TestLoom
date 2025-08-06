@@ -39,6 +39,29 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date
   },
+  refreshTokens: [{
+    tokenId: {
+      type: String,
+      required: true
+    },
+    token: {
+      type: String,
+      required: true
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    },
+    userAgent: {
+      type: String,
+      default: 'Unknown'
+    },
+    ipAddress: {
+      type: String,
+      default: 'Unknown'
+    }
+  }],
+  // Legacy field for backward compatibility - will be removed
   refreshToken: {
     type: String,
     select: false
@@ -51,7 +74,7 @@ const userSchema = new mongoose.Schema({
  * Pre-save middleware to hash password before saving to database
  * Only runs when password is modified or user is new
  */
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   // Only hash the password if it has been modified (or is new)
   if (!this.isModified('password')) return next();
 
@@ -70,17 +93,19 @@ userSchema.pre('save', async function(next) {
  * @param {string} candidatePassword - The password to check
  * @returns {boolean} - True if passwords match
  */
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
 /**
  * Method to get user data without sensitive information
- * @returns {object} - User object without password
+ * @returns {object} - User object without password and refresh tokens
  */
-userSchema.methods.toJSON = function() {
+userSchema.methods.toJSON = function () {
   const userObject = this.toObject();
   delete userObject.password;
+  delete userObject.refreshTokens;
+  delete userObject.refreshToken;
   return userObject;
 };
 

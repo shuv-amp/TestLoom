@@ -2,14 +2,15 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 
 /**
- * Middleware to verify JWT access token and protect routes
- * Adds user information to req.user if token is valid
+ * Enhanced middleware to verify JWT access token and protect routes
+ * Includes proper error handling and security measures
  */
 const authenticateToken = async (req, res, next) => {
   try {
     let token = null;
     const authHeader = req.headers.authorization;
 
+    // Extract token from Authorization header
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.substring(7);
     }
@@ -17,41 +18,84 @@ const authenticateToken = async (req, res, next) => {
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: 'Access denied. No token provided.'
+        message: 'Access denied. No token provided.',
+        code: 'NO_TOKEN'
       });
     }
 
-    // Verify access token
-    console.log('Raw JWT:', token);
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('Decoded JWT:', decoded);
-    if (decoded.exp) {
-      const expDate = new Date(decoded.exp * 1000);
-      console.log('JWT expires at:', expDate.toISOString());
+    // Verify access token with enhanced options
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      issuer: 'testloom-api',
+      audience: 'testloom-client'
+    });
+
+    // Ensure it's an access token
+    if (decoded.type !== 'access') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token type.',
+        code: 'INVALID_TOKEN_TYPE'
+      });
     }
-    // Attach user to the request
-    req.user = { userId: decoded.userId };
+
+    // Check if user still exists and is active
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User no longer exists.',
+        code: 'USER_NOT_FOUND'
+      });
+    }
+
+    if (!user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: 'User account is deactivated.',
+        code: 'USER_DEACTIVATED'
+      });
+    }
+
+    // Attach user to request
+    req.user = {
+      userId: decoded.userId,
+      role: user.role,
+      email: user.email
+    };
 
     next();
 
   } catch (error) {
-    console.error('JWT verification error:', error);
-    console.log('Current server time:', new Date().toISOString());
+    console.error('JWT verification error:', error.message);
+
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({
         success: false,
-        message: 'Token expired. Please refresh your token.'
+        message: 'Token has expired.',
+        code: 'TOKEN_EXPIRED'
       });
     }
+
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({
         success: false,
-        message: 'Invalid token.'
+        message: 'Invalid token.',
+        code: 'INVALID_TOKEN'
       });
     }
+
+    if (error.name === 'NotBeforeError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Token not active yet.',
+        code: 'TOKEN_NOT_ACTIVE'
+      });
+    }
+
     res.status(500).json({
       success: false,
-      message: 'Internal server error during authentication.'
+      message: 'Internal server error during authentication.',
+      code: 'AUTH_ERROR'
     });
   }
 };
