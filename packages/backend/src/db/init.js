@@ -14,8 +14,8 @@ const initializeDatabase = async () => {
     await createIndexes();
 
     console.log('🌱 Seeding sample data...');
-  await seedCategories();
-  await seedQuestions();
+    await seedCategories();
+    await seedQuestions();
 
     console.log('🎉 Database initialization completed successfully');
     process.exit(0);

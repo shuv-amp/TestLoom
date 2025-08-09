@@ -5,7 +5,7 @@ const User = require('../../models/userModel');
 const seedQuestions = async () => {
   try {
     let adminUser = await User.findOne({ role: 'admin' });
-    
+
     if (!adminUser) {
       adminUser = new User({
         name: 'System Admin',
