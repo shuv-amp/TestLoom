@@ -8,46 +8,64 @@ function initSocket(server) {
     cors: {
       origin: process.env.CLIENT_URL || "http://localhost:3000",
       methods: ["GET", "POST"]
-    }
+    },
+    // Add connection timeout and error handling
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    transports: ['websocket', 'polling'],
+    allowEIO3: true
+  });
+
+  // Global error handler for the socket server
+  io.engine.on("connection_error", (err) => {
+    console.log("Socket.IO connection error:", err);
   });
 
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token;
     if (!token) {
-      return next(new Error("Authentication error: No token provided"));
+      // Allow connection but mark as unauthenticated
+      socket.user = { anonymous: true };
+      return next();
     }
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-      if (err) {
-        return next(new Error("Authentication error: Invalid token"));
-      }
+    
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
       socket.user = decoded;
       next();
-    });
+    } catch (err) {
+      console.warn("Socket authentication failed:", err.message);
+      // Allow connection but mark as unauthenticated
+      socket.user = { anonymous: true };
+      next();
+    }
   });
 
   io.on("connection", (socket) => {
     console.log("A user connected:", socket.id, socket.user?.email);
 
-    socket.on("joinRoom", (room) => {
-      socket.join(room);
-      console.log(`User ${socket.id} joined room ${room}`);
+    // Add comprehensive error handling
+    socket.on("error", (err) => {
+      console.error(`Socket error for user ${socket.id}:`, err);
     });
 
-    socket.on("leaveRoom", (room) => {
-      socket.leave(room);
-      console.log(`User ${socket.id} left room ${room}`);
+    // Handle disconnect gracefully
+    socket.on("disconnect", (reason) => {
+      console.log("User disconnected:", socket.id, "Reason:", reason);
     });
 
-    socket.on("chatMessage", (data) => {
-      io.to(data.room).emit("chatMessage", {
-        user: socket.user?.email || "Anonymous",
-        message: data.message,
-        timestamp: new Date()
-      });
+    // Handle connection errors
+    socket.on("connect_error", (err) => {
+      console.error("Socket connection error:", err);
     });
 
-    socket.on("disconnect", () => {
-      console.log("User disconnected:", socket.id);
+    // Add socket-level error handling for write operations
+    socket.conn.on('error', (err) => {
+      if (err.code === 'EOF' || err.syscall === 'write') {
+        console.log(`Socket write error handled for ${socket.id}:`, err.code);
+      } else {
+        console.error(`Socket connection error for ${socket.id}:`, err);
+      }
     });
   });
 

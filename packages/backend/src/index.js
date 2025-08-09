@@ -30,6 +30,11 @@ const env = validateEnv();
 const app = express();
 const server = http.createServer(app);
 
+// Set server timeout
+server.timeout = 40000; // 40 seconds
+server.keepAliveTimeout = 5000;
+server.headersTimeout = 6000;
+
 // Initialize Socket.IO
 initSocket(server);
 
@@ -125,6 +130,40 @@ server.listen(PORT, () => {
 🌍 Environment: ${process.env.NODE_ENV || 'development'}
 🔗 Health check: http://localhost:${PORT}
   `);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit the process, just log the error
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // Don't exit the process for socket errors
+  if (error.code === 'EOF' || error.syscall === 'write' || error.code === 'EPIPE') {
+    console.log('Socket write error handled gracefully, continuing...');
+    return;
+  }
+  // For other critical errors, exit gracefully
+  console.log('Critical error detected, shutting down...');
+  process.exit(1);
+});
+
+// Handle SIGTERM and SIGINT gracefully
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  server.close(() => {
+    process.exit(0);
+  });
 });
 
 module.exports = app;

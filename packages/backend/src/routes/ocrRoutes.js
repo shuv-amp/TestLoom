@@ -35,6 +35,19 @@ const upload = multer({
   fileFilter: fileFilter
 });
 
-router.post('/upload', authenticateToken, upload.single('image'), uploadImage);
+// Middleware to set timeout for OCR requests
+const ocrTimeout = (req, res, next) => {
+  req.setTimeout(35000, () => {
+    if (!res.headersSent) {
+      res.status(408).json({
+        success: false,
+        message: 'Request timeout. OCR processing took too long.'
+      });
+    }
+  });
+  next();
+};
+
+router.post('/upload', authenticateToken, ocrTimeout, upload.single('image'), uploadImage);
 
 module.exports = router;
