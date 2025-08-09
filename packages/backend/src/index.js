@@ -31,7 +31,7 @@ const app = express();
 const server = http.createServer(app);
 
 // Set server timeout
-server.timeout = 70000; // 70 seconds
+server.timeout = 130000; // 130 seconds
 server.keepAliveTimeout = 5000;
 server.headersTimeout = 6000;
 

@@ -207,19 +207,33 @@ class EnhancedTraditionalParser {
     parseQuestionContent(content, questionId) {
         if (content.length < 10) return null;
 
+        // Remove question numbering from the beginning of content
+        const cleanedContent = this.removeQuestionNumbering(content);
+        
         // Detect question type and extract components
-        const questionType = this.detectQuestionType(content);
+        const questionType = this.detectQuestionType(cleanedContent);
 
         switch (questionType) {
             case 'MCQ':
-                return this.parseMCQQuestion(content, questionId);
+                return this.parseMCQQuestion(cleanedContent, questionId);
             case 'FIB':
-                return this.parseFIBQuestion(content, questionId);
+                return this.parseFIBQuestion(cleanedContent, questionId);
             case 'DESCRIPTIVE':
-                return this.parseDescriptiveQuestion(content, questionId);
+                return this.parseDescriptiveQuestion(cleanedContent, questionId);
             default:
                 return null;
         }
+    }
+
+    /**
+     * Remove question numbering from text
+     */
+    removeQuestionNumbering(text) {
+        // Remove patterns like "3.", "Q3.", "Question 3:", etc. from the beginning
+        return text
+            .replace(/^\s*(?:\d+\.?\s*|\w+\.?\s*\d+\.?\s*|question\s*\d+\.?\s*:?\s*)/i, '')
+            .replace(/^\s*(?:que\.?\s*\d+\.?\s*|q\.?\s*\d+\.?\s*)/i, '')
+            .trim();
     }
 
     /**
@@ -363,7 +377,7 @@ class EnhancedTraditionalParser {
             const matches = [...text.matchAll(pattern)];
             const options = matches.map(match => ({
                 label: match[1].toLowerCase(),
-                text: match[2].trim()
+                text: this.cleanOptionText(match[2].trim())
             })).filter(opt => opt.text.length > 0);
 
             if (options.length > bestOptions.length) {
@@ -372,6 +386,16 @@ class EnhancedTraditionalParser {
         }
 
         return bestOptions;
+    }
+
+    /**
+     * Clean option text by removing numbering
+     */
+    cleanOptionText(text) {
+        // Remove leading numbers, letters, or patterns like "1)", "a)", etc.
+        return text
+            .replace(/^\s*(?:[a-eA-E1-5][\)\.\]]\s*|[a-eA-E1-5]\s+)/, '')
+            .trim();
     }
 
     /**

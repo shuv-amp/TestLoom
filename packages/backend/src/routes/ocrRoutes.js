@@ -37,7 +37,7 @@ const upload = multer({
 
 // Middleware to set timeout for OCR requests
 const ocrTimeout = (req, res, next) => {
-  req.setTimeout(60000, () => {
+  req.setTimeout(120000, () => { // Increased to 2 minutes
     if (!res.headersSent) {
       res.status(408).json({
         success: false,

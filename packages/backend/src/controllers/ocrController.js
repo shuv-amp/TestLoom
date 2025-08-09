@@ -49,7 +49,7 @@ const uploadImage = async (req, res) => {
   console.log('req.file:', req.file)
   console.log('req.body:', req.body)
   
-  // Set a timeout for the entire operation (increased to 55 seconds)
+  // Set a timeout for the entire operation (increased to 110 seconds)
   const timeout = setTimeout(() => {
     if (!responded && !res.headersSent) {
       responded = true;
@@ -58,7 +58,7 @@ const uploadImage = async (req, res) => {
         message: 'OCR processing timed out. Please try with a smaller image or simpler content.'
       });
     }
-  }, 55000); // 55 seconds timeout
+  }, 110000); // 110 seconds timeout
 
   let responded = false;
   let aborted = false;
@@ -130,11 +130,15 @@ const uploadImage = async (req, res) => {
     // Defensive error handling for question parsing
     let parsedQuestions = [];
     try {
+      console.log('Starting question parsing...');
       parsedQuestions = await ocrService.parseQuestions(ocrResult.text, {
         subject: req.body.subject,
         expectedQuestionCount: req.body.expectedQuestionCount
       });
+      
+      console.log(`Question parsing completed. Found ${parsedQuestions.length} questions.`);
     } catch (parseError) {
+      console.error('Question parsing failed:', parseError.message);
       await fs.unlink(req.file.path);
       return safeRespond(500, {
         success: false,

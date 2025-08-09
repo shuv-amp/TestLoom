@@ -47,7 +47,10 @@ class UltraEnhancedOCRService {
         const worker = await createWorker('eng', config.oem, {
             logger: (m) => {
                 if (m.status === 'recognizing text') {
-                    this.logger.debug(`OCR Progress (${config.name}): ${Math.round(m.progress * 100)}%`);
+                    const progress = Math.round(m.progress * 100);
+                    if (progress % 20 === 0) { // Log every 20%
+                        this.logger.info(`OCR Progress (${config.name}): ${progress}%`);
+                    }
                 }
             }
         });
@@ -103,8 +106,8 @@ class UltraEnhancedOCRService {
             const preprocessResult = await imagePreprocessor.ultraPreprocessForOCR(imageBuffer, options);
             // Step 2: Run OCR with multiple engines and variants
             const ocrResults = [];
-            // Test only top 2 preprocessing variants for speed
-            const topVariants = Object.entries(preprocessResult.variants).slice(0, 2);
+            // Test only the best preprocessing variant for speed (top 1)
+            const topVariants = Object.entries(preprocessResult.variants).slice(0, 1);
             for (const [variantName, variantData] of topVariants) {
                 if (!variantData.buffer || !Buffer.isBuffer(variantData.buffer)) {
                     this.logger.warn(`Skipping variant ${variantName}: invalid buffer.`);
