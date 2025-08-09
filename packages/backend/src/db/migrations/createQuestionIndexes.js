@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Question = require('../models/questionModel');
+const Question = require('../../models/questionModel');
 
 const createIndexes = async () => {
   try {
