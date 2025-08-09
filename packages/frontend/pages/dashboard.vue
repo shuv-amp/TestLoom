@@ -8,7 +8,7 @@
         <NuxtLink to="/dashboard" class="flex items-center px-4 py-2 text-gray-700 bg-gray-200 rounded-md">
           <span class="mr-3">📊</span> Dashboard
         </NuxtLink>
-        <NuxtLink to="#" class="mt-2 flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">
+        <NuxtLink to="/quiz-setup" class="mt-2 flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">
           <span class="mr-3">📚</span> Subjects
         </NuxtLink>
         <NuxtLink to="#" class="mt-2 flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">
