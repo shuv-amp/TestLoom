@@ -18,7 +18,7 @@
                 <div class="flex items-center">
                   <ChevronRightIcon class="h-5 w-5 text-gray-400" />
                   <NuxtLink
-                    :to="`/forum/category/${thread.category._id}`"
+                    :to="thread.category ? `/forum/category/${thread.category._id}` : '/forum'"
                     class="ml-4 text-sm font-medium text-gray-500 hover:text-gray-700"
                   >
                     {{ thread.category?.name }}
@@ -294,6 +294,7 @@ const thread = ref({
   tags: [],
   views: 0,
   replyCount: 0,
+  createdAt: new Date(),
   lastReplyAt: new Date(),
   isPinned: false,
   isLocked: false
@@ -334,10 +335,36 @@ const renderMarkdown = (content) => {
 };
 
 const formatDate = (date) => {
-  return new Intl.RelativeTimeFormat('en', { numeric: 'auto' }).format(
-    Math.ceil((new Date(date) - new Date()) / (1000 * 60 * 60 * 24)),
-    'day'
-  );
+  const d = new Date(date);
+  // Fallback for missing/invalid dates
+  if (!date || isNaN(d.getTime())) {
+    return 'just now';
+  }
+
+  const diffMs = d.getTime() - Date.now();
+  const dayMs = 1000 * 60 * 60 * 24;
+  const diffDays = Math.round(diffMs / dayMs);
+
+  if (!Number.isFinite(diffDays)) {
+    return 'just now';
+  }
+
+  const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+  if (Math.abs(diffDays) >= 1) {
+    return rtf.format(diffDays, 'day');
+  }
+
+  // Finer granularity for < 1 day
+  const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+  if (Number.isFinite(diffHours) && diffHours !== 0) {
+    return rtf.format(diffHours, 'hour');
+  }
+  const diffMinutes = Math.round(diffMs / (1000 * 60));
+  if (Number.isFinite(diffMinutes) && diffMinutes !== 0) {
+    return rtf.format(diffMinutes, 'minute');
+  }
+
+  return 'just now';
 };
 
 const canEditPost = (post) => {
