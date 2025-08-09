@@ -2,27 +2,25 @@ const { createWorker, PSM, OEM } = require('tesseract.js');
 const tesseract = require('node-tesseract-ocr');
 const imagePreprocessor = require('./imagePreprocessor');
 
-const safeWhitelist = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?[]{}:;-_+=*/%$@#&~^<>|\\/ \n\t'; // Removed backtick and all quotes
+const safeWhitelist = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?[]{}:;-_+=*/%$@#&~^<> \n\t'; // Removed problematic characters
 
 const isAppleSilicon = process.platform === 'darwin' && process.arch === 'arm64';
 
 class UltraEnhancedOCRService {
     constructor() {
         this.workers = new Map();
-        this.maxWorkers = 4;
+        this.maxWorkers = 2; // Reduced from 4 for faster performance
         this.logger = console;
-        this.ocrEngines = ['tesseract.js', 'node-tesseract'];
+        this.ocrEngines = ['tesseract.js']; // Only tesseract.js now
         this.initializeWorkers();
     }
 
     async initializeWorkers() {
         try {
-            // Initialize Tesseract.js workers with different configurations
+            // Initialize Tesseract.js workers with different configurations (reduced count)
             const configs = [
                 { name: 'precise', psm: PSM.SINGLE_BLOCK, oem: OEM.LSTM_ONLY },
-                { name: 'fast', psm: PSM.SINGLE_TEXT_LINE, oem: OEM.LSTM_ONLY },
-                { name: 'column', psm: PSM.SINGLE_COLUMN, oem: OEM.LSTM_ONLY },
-                { name: 'uniform', psm: PSM.UNIFORM_BLOCK, oem: OEM.LSTM_ONLY }
+                { name: 'fast', psm: PSM.SINGLE_TEXT_LINE, oem: OEM.LSTM_ONLY }
             ];
 
             for (let i = 0; i < configs.length; i++) {
@@ -57,7 +55,7 @@ class UltraEnhancedOCRService {
         await worker.setParameters({
             tessedit_pageseg_mode: config.psm,
             // Character whitelist optimized for educational content
-            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?()[]{}:;-_+=*/%$@#&~^<>|\\/ \n\t°√∞∑∫∂∆π',
+            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?()[]{}:;-_+=*/%$@#&~^<> \n\t°√∞∑∫∂∆π',
             // Language model improvements
             language_model_penalty_non_freq_dict_word: '0.05',
             language_model_penalty_non_dict_word: '0.1',
@@ -105,20 +103,17 @@ class UltraEnhancedOCRService {
             const preprocessResult = await imagePreprocessor.ultraPreprocessForOCR(imageBuffer, options);
             // Step 2: Run OCR with multiple engines and variants
             const ocrResults = [];
-            // Test top 3 preprocessing variants with all OCR configurations
-            const topVariants = Object.entries(preprocessResult.variants).slice(0, 3);
+            // Test only top 2 preprocessing variants for speed
+            const topVariants = Object.entries(preprocessResult.variants).slice(0, 2);
             for (const [variantName, variantData] of topVariants) {
                 if (!variantData.buffer || !Buffer.isBuffer(variantData.buffer)) {
                     this.logger.warn(`Skipping variant ${variantName}: invalid buffer.`);
                     continue;
                 }
                 this.logger.info(`Processing variant: ${variantName} (quality: ${variantData.quality})`);
-                // Tesseract.js with multiple workers
+                // Tesseract.js with multiple workers (only engine used now)
                 const tesseractResults = await this.runTesseractVariants(variantData.buffer);
                 ocrResults.push(...tesseractResults.map(r => ({ ...r, variant: variantName, engine: 'tesseract.js' })));
-                // Node-tesseract with different configurations
-                const nodeResults = await this.runNodeTesseractVariants(variantData.buffer);
-                ocrResults.push(...nodeResults.map(r => ({ ...r, variant: variantName, engine: 'node-tesseract' })));
             }
             // Step 3: Fusion and selection of best result
             const bestResult = await this.fuseOCRResults(ocrResults);
@@ -284,53 +279,9 @@ class UltraEnhancedOCRService {
      * Run node-tesseract with different PSM modes
      */
     async runNodeTesseractVariants(imageBuffer) {
-        if (isAppleSilicon) {
-            // Skip node-tesseract-ocr on Apple Silicon
-            return [];
-        }
-        const results = [];
-        const psmModes = [3, 4, 6, 8, 11, 13]; // Different page segmentation modes
-
-        const promises = psmModes.map(async (psm) => {
-            try {
-                const config = {
-                    lang: 'eng',
-                    oem: 1,
-                    psm: psm,
-                    options: [
-                        '-c', `tessedit_char_whitelist=${safeWhitelist}`,
-                        '-c', 'preserve_interword_spaces=1',
-                        '-c', 'tessedit_enable_dict_correction=1'
-                    ]
-                };
-
-                const text = await tesseract.recognize(imageBuffer, config);
-                const confidence = this.calculateNodeTesseractConfidence(text);
-
-                return {
-                    text: text || '',
-                    confidence,
-                    wordCount: (text || '').split(/\s+/).filter(w => w.length > 0).length,
-                    psmMode: psm
-                };
-            } catch (error) {
-                this.logger.warn(`Node-tesseract PSM ${psm} failed:`, error.message);
-                return { text: '', confidence: 0, wordCount: 0, psmMode: psm };
-            }
-        });
-
-        try {
-            const settledResults = await Promise.allSettled(promises);
-            for (const result of settledResults) {
-                if (result.status === 'fulfilled' && result.value.text.length > 10) {
-                    results.push(result.value);
-                }
-            }
-        } catch (error) {
-            this.logger.warn('Node-tesseract processing failed:', error.message);
-        }
-
-        return results;
+        // Disable node-tesseract entirely due to shell escaping issues
+        this.logger.info('Node-tesseract disabled due to shell command issues');
+        return [];
     }
 
     /**

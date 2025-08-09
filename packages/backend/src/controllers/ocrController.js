@@ -49,7 +49,7 @@ const uploadImage = async (req, res) => {
   console.log('req.file:', req.file)
   console.log('req.body:', req.body)
   
-  // Set a timeout for the entire operation
+  // Set a timeout for the entire operation (increased to 55 seconds)
   const timeout = setTimeout(() => {
     if (!responded && !res.headersSent) {
       responded = true;
@@ -58,7 +58,7 @@ const uploadImage = async (req, res) => {
         message: 'OCR processing timed out. Please try with a smaller image or simpler content.'
       });
     }
-  }, 30000); // 30 seconds timeout
+  }, 55000); // 55 seconds timeout
 
   let responded = false;
   let aborted = false;
