@@ -11,9 +11,6 @@
         <NuxtLink to="/quiz-setup" class="mt-2 flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">
           <span class="mr-3">📚</span> Subjects
         </NuxtLink>
-        <NuxtLink to="#" class="mt-2 flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">
-          <span class="mr-3">⬆</span> Upload Questions
-        </NuxtLink>
       </nav>
       <div class="absolute bottom-0 w-64 p-4">
          <button @click="logout" class="mt-2 flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md w-full text-left">

@@ -209,7 +209,7 @@ class EnhancedTraditionalParser {
 
         // Remove question numbering from the beginning of content
         const cleanedContent = this.removeQuestionNumbering(content);
-        
+
         // Detect question type and extract components
         const questionType = this.detectQuestionType(cleanedContent);
 

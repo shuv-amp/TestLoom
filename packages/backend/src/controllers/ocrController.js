@@ -48,7 +48,7 @@ const uploadImage = async (req, res) => {
   console.log('uploadImage called')
   console.log('req.file:', req.file)
   console.log('req.body:', req.body)
-  
+
   // Set a timeout for the entire operation (increased to 110 seconds)
   const timeout = setTimeout(() => {
     if (!responded && !res.headersSent) {
@@ -135,7 +135,7 @@ const uploadImage = async (req, res) => {
         subject: req.body.subject,
         expectedQuestionCount: req.body.expectedQuestionCount
       });
-      
+
       console.log(`Question parsing completed. Found ${parsedQuestions.length} questions.`);
     } catch (parseError) {
       console.error('Question parsing failed:', parseError.message);
