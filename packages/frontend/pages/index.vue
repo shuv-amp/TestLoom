@@ -1,11 +1,9 @@
 <template>
   <div ref="pageEl" class="page">
-    <!-- Header -->
     <header class="header">
       <div class="container nav">
         <NuxtLink to="/" class="brand" aria-label="TestLoom home">
           <span class="brand-mark" aria-hidden="true">
-            <!-- TL monogram -->
             <svg class="tl" width="28" height="28" viewBox="0 0 64 64" fill="none" role="img" aria-label="TL monogram">
               <defs>
                 <linearGradient id="gTL" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
@@ -13,13 +11,9 @@
                   <stop :stop-color="brand2" offset="1"/>
                 </linearGradient>
               </defs>
-              <!-- Outer rounded shape -->
               <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#gTL)" opacity=".18"/>
               <rect x="4.5" y="4.5" width="55" height="55" rx="15.5" stroke="url(#gTL)" opacity=".35"/>
-              <!-- Fused TL: T shares L's vertical stem -->
-              <!-- T bar -->
               <path d="M10 16H54V24H38V52H26V24H10V16Z" fill="url(#gTL)"/>
-              <!-- L foot (extends from shared stem) -->
               <path d="M38 52V24H46V44H54V52H38Z" fill="url(#gTL)" opacity=".8"/>
             </svg>
           </span>
@@ -39,7 +33,6 @@
     </header>
 
     <main>
-      <!-- Hero -->
       <section class="hero">
         <div class="grid" aria-hidden="true"></div>
         <div class="container hero-grid">
@@ -56,7 +49,6 @@
 
           </div>
 
-          <!-- Hero visual -->
           <div class="hero-visual">
             <div class="glass-card">
               <div class="glass-head">
@@ -89,7 +81,6 @@
         </div>
       </section>
 
-      <!-- Features -->
       <section id="features" class="section">
         <div class="container">
           <header class="section-head">
@@ -175,7 +166,6 @@
         </div>
       </section>
 
-      <!-- Workflow -->
       <section id="how" class="section section-alt">
         <div class="container">
           <header class="section-head">
@@ -187,7 +177,6 @@
           </header>
 
           <div class="flow">
-            <!-- Timeline -->
             <ol class="timeline" aria-label="Workflow steps">
               <li class="t-item">
                 <div class="node">1</div>
@@ -226,7 +215,6 @@
               </li>
             </ol>
 
-            <!-- Live Preview Stack -->
             <div class="flow-previews">
               <div class="panel p-drop">
                 <div class="p-head">
@@ -268,7 +256,6 @@
             </div>
           </div>
 
-          <!-- CTA -->
           <div class="cta">
             <div class="cta-copy">
               <h3 class="h3">Ready to weave your study plan?</h3>
@@ -288,7 +275,6 @@
         <div class="foot-col">
           <div class="brand foot-brand">
             <span class="brand-mark" aria-hidden="true">
-              <!-- Small TL for footer -->
               <svg class="tl" width="22" height="22" viewBox="0 0 64 64" fill="none">
                 <defs>
                   <linearGradient id="gTLFoot" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
@@ -384,9 +370,7 @@ onMounted(() => {
 </script>
 
 <style>
-/* ==========================================================================
-   TestLoom Design System
-   ========================================================================== */
+/* Design System Variables & Base Styles */
 :root {
   --bg-dark: #080a0f;
   --bg-light: #11141c;
@@ -427,11 +411,12 @@ onMounted(() => {
   --fs-6: clamp(2.4rem, 1.8rem + 3vw, 3.2rem);
 }
 
-/* Animations */
+/* Global Animations */
 @keyframes fadeIn-Up { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes float { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
 @keyframes pulse-glow { 0%,100% { box-shadow: 0 0 15px -6px currentColor; } 50% { box-shadow: 0 0 22px 0 currentColor; } }
 
+/* Global Resets and Base Typography */
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 html, body, #__nuxt { height: 100%; }
@@ -447,7 +432,9 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
+</style>
 
+<style scoped>
 /* Cursor-follow glow */
 .page { position: relative; isolation: isolate; }
 .page::before {

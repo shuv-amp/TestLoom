@@ -1,73 +1,82 @@
 <template>
-  <div class="bg-gray-50 min-h-screen flex items-center justify-center px-4 py-12">
-    <div class="w-full max-w-md">
-      <div class="text-center mb-8">
-        <NuxtLink to="/" class="text-3xl font-bold text-gray-900">TestLoom</NuxtLink>
-        <h2 class="mt-2 text-2xl font-semibold text-gray-700">Create your TestLoom account</h2>
+  <div class="page-container">
+    <div class="form-wrapper">
+      <div class="form-header">
+        <NuxtLink to="/" class="brand" aria-label="TestLoom home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg class="tl" width="48" height="48" viewBox="0 0 64 64" fill="none" role="img" aria-label="TL monogram">
+              <defs>
+                <linearGradient id="gTL" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#7c5cff" offset="0"/>
+                  <stop stop-color="#22d3ee" offset="1"/>
+                </linearGradient>
+              </defs>
+              <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#gTL)" opacity=".18"/>
+              <rect x="4.5" y="4.5" width="55" height="55" rx="15.5" stroke="url(#gTL)" opacity=".35"/>
+              <path d="M10 16H54V24H38V52H26V24H10V16Z" fill="url(#gTL)"/>
+              <path d="M38 52V24H46V44H54V52H38Z" fill="url(#gTL)" opacity=".8"/>
+            </svg>
+          </span>
+        </NuxtLink>
+        <h1 class="h2">Create your Account</h1>
+        <p class="lead">Join a community of students preparing for success.</p>
       </div>
 
-      <div class="bg-white p-8 rounded-lg shadow-md border border-gray-200">
-        <form @submit.prevent="handleSignup">
-          <div class="mb-4">
-            <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <input id="fullName" v-model="name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Niraj Ram" required>
-          </div>
-          <div class="mb-4">
-            <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-            <input id="email" v-model="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="you@student.ku.edu.np" required>
-          </div>
-          <div class="mb-6 relative">
-            <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input id="password" v-model="password" :type="showPassword ? 'text' : 'password'" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••••" required>
-            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center mt-6" @click="togglePassword">
-              <span class="text-gray-500 hover:text-gray-700">
-                <svg v-if="!showPassword" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                  <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-                </svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd" />
-                  <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
-                </svg>
-              </span>
+      <form @submit.prevent="handleSignup" class="form-body">
+        <div class="input-group">
+          <label for="fullName">Full Name</label>
+          <input id="fullName" v-model="name" type="text" class="form-input" placeholder="Enter your full name" required>
+        </div>
+        <div class="input-group">
+          <label for="email">University Email</label>
+          <input id="email" v-model="email" type="email" class="form-input" placeholder="you@student.ku.edu.np" required>
+        </div>
+        <div class="input-group">
+          <label for="password">Password</label>
+          <div class="password-wrapper">
+            <input id="password" v-model="password" :type="showPassword ? 'text' : 'password'" class="form-input" placeholder="••••••••••" required>
+            <button type="button" class="password-toggle" @click="togglePassword" aria-label="Toggle password visibility">
+              <svg v-if="!showPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
             </button>
           </div>
-          <div class="mb-6 relative">
-            <label for="cpassword" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-            <input id="cpassword" v-model="cpassword" :type="showConfirmPassword ? 'text' : 'password'" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••••" required>
-            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center mt-6" @click="toggleConfirmPassword">
-              <span class="text-gray-500 hover:text-gray-700">
-                <svg v-if="!showConfirmPassword" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                  <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-                </svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd" />
-                  <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
-                </svg>
-              </span>
+        </div>
+        <div class="input-group">
+          <label for="cpassword">Confirm Password</label>
+          <div class="password-wrapper">
+            <input id="cpassword" v-model="cpassword" :type="showConfirmPassword ? 'text' : 'password'" class="form-input" placeholder="••••••••••" required>
+             <button type="button" class="password-toggle" @click="toggleConfirmPassword" aria-label="Toggle password visibility">
+              <svg v-if="!showConfirmPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
             </button>
           </div>
-          <div>
-            <button type="submit" class="w-full bg-blue-600 text-white py-2.5 rounded-md font-semibold hover:bg-blue-700 transition">
-              Create Account
-            </button>
-          </div>
-        </form>
-      </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary w-full">
+          Create Account
+        </button>
+      </form>
 
-      <p class="text-center mt-6 text-sm text-gray-600">
-        Already have an account? 
-        <NuxtLink to="/login" class="font-medium text-blue-600 hover:underline">Log In</NuxtLink>
+      <p class="form-footer">
+        Already have an account?
+        <NuxtLink to="/login" class="link">Log In</NuxtLink>
       </p>
     </div>
   </div>
 </template>
 
 <script setup>
+// The script block remains the same as before.
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '~/stores/user'
+
+useHead({
+  title: 'Sign Up - TestLoom',
+  meta: [
+    { name: 'description', content: 'Create a TestLoom account to start practicing for exams.' }
+  ],
+})
 
 const name = ref('')
 const email = ref('')
@@ -82,21 +91,20 @@ const userStore = useUserStore()
 function togglePassword() {
   showPassword.value = !showPassword.value
 }
-
 function toggleConfirmPassword() {
   showConfirmPassword.value = !showConfirmPassword.value
 }
 
 async function handleSignup() {
-  console.log('Signup button clicked', name.value, email.value, password.value)
-  if(password.value !== cpassword.value){
-    alert('Password did not match')
+  if (password.value !== cpassword.value) {
+    alert('Passwords do not match. Please try again.')
     return
   }
   if (!email.value.endsWith('@student.ku.edu.np')) {
-    alert('Please use a @student.ku.edu.np email address')
+    alert('Please use your official @student.ku.edu.np email address to sign up.')
     return
   }
+  
   try {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
@@ -109,10 +117,187 @@ async function handleSignup() {
       await userStore.fetchSession()
       router.push('/dashboard')
     } else {
-      alert(data.message || 'Signup failed')
+      alert(data.message || 'Signup failed. The email might already be in use.')
     }
   } catch (e) {
-    alert('Network error. Please try again.')
+    console.error("Signup Error:", e)
+    alert('A network error occurred. Please check your connection and try again.')
   }
 }
 </script>
+
+<style scoped>
+/*
+  IMPORTANT: The :root variables are intentionally removed from here.
+  They should be defined in a single, global CSS file (e.g., /assets/css/main.css)
+  and included in your nuxt.config file. This ensures all components share the
+  same design tokens without CSS duplication or conflicts.
+*/
+
+.page-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  background: radial-gradient(circle at 50% 0%, var(--bg-light), var(--bg-dark) 50%);
+}
+
+.form-wrapper {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-m);
+  padding: 2.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+}
+
+.form-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.brand {
+  display: inline-flex;
+  margin-bottom: 1.5rem;
+  transition: transform 0.2s ease-in-out;
+}
+.brand:hover {
+  transform: scale(1.05);
+}
+
+/* Enhanced logo container style */
+.brand-mark {
+  display: grid;
+  place-items: center;
+  /* Increased size for better presence */
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: #0c1018;
+  border: 1px solid var(--edge);
+  position: relative;
+  overflow: hidden;
+}
+
+.h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 0.5rem;
+}
+
+.lead {
+  color: var(--muted);
+  font-size: 1rem;
+  margin: 0;
+}
+
+.form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group label {
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.form-input {
+  width: 100%;
+  height: 44px;
+  background-color: var(--bg-dark);
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  padding: 0 1rem;
+  color: var(--text);
+  font-size: 1rem;
+  transition: all 0.25s ease-in-out;
+}
+
+.form-input::placeholder {
+  color: #5b667a;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--brand-1);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand-1) 30%, transparent);
+}
+
+.password-wrapper {
+  position: relative;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding-right: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+}
+.password-toggle:hover {
+  color: var(--text);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 0 1.25rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: all 0.25s ease-in-out;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  color: #f0f3f8;
+  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+  box-shadow: 0 4px 15px rgba(34, 211, 238, .2);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 6px 20px rgba(34, 211, 238, .3);
+  transform: translateY(-2px);
+}
+.btn-primary:active {
+  transform: translateY(-1px) scale(0.99);
+}
+
+.form-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+  color: var(--muted);
+}
+
+.link {
+  color: var(--brand-2);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+</style>
