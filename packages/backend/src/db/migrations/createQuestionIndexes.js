@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Question = require('../models/questionModel');
+const Question = require('../../models/questionModel');
 
 const createIndexes = async () => {
   try {
@@ -9,7 +9,7 @@ const createIndexes = async () => {
     await Question.collection.createIndex({ difficulty: 1 });
     await Question.collection.createIndex({ isVerified: 1 });
     await Question.collection.createIndex({ 'ocrMetadata.confidence': -1 });
-    
+
     console.log('Database indexes created successfully');
   } catch (error) {
     console.error('Error creating indexes:', error);

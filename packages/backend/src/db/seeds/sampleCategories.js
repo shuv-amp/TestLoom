@@ -40,10 +40,6 @@ const sampleCategories = [
 
 const seedCategories = async () => {
     try {
-        await mongoose.connect(process.env.MONGODB_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true
-        });
         for (const cat of sampleCategories) {
             const exists = await Category.findOne({ name: cat.name });
             if (!exists) {
@@ -54,7 +50,6 @@ const seedCategories = async () => {
             }
         }
         console.log('Sample categories seeded successfully');
-        await mongoose.disconnect();
     } catch (error) {
         console.error('Error seeding categories:', error);
         process.exit(1);

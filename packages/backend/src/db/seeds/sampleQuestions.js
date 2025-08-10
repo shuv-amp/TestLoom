@@ -1,11 +1,11 @@
 const mongoose = require('mongoose');
-const Question = require('../models/questionModel');
-const User = require('../models/userModel');
+const Question = require('../../models/questionModel');
+const User = require('../../models/userModel');
 
 const seedQuestions = async () => {
   try {
     let adminUser = await User.findOne({ role: 'admin' });
-    
+
     if (!adminUser) {
       adminUser = new User({
         name: 'System Admin',

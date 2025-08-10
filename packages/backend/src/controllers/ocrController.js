@@ -48,21 +48,46 @@ const uploadImage = async (req, res) => {
   console.log('uploadImage called')
   console.log('req.file:', req.file)
   console.log('req.body:', req.body)
+
+  // Set a timeout for the entire operation (increased to 110 seconds)
+  const timeout = setTimeout(() => {
+    if (!responded && !res.headersSent) {
+      responded = true;
+      res.status(408).json({
+        success: false,
+        message: 'OCR processing timed out. Please try with a smaller image or simpler content.'
+      });
+    }
+  }, 110000); // 110 seconds timeout
+
   let responded = false;
   let aborted = false;
   function safeRespond(status, payload) {
+    clearTimeout(timeout);
     if (!responded && !res.headersSent && !aborted) {
       responded = true;
       res.status(status).json(payload);
     }
   }
   req.on('close', () => {
+    console.log('Client disconnected during OCR processing');
     aborted = true;
+    clearTimeout(timeout);
     if (!responded) {
       responded = true;
-      // Optionally log or clean up
+      // Clean up any ongoing operations
     }
   });
+
+  req.on('error', (err) => {
+    console.error('Request error during OCR:', err);
+    aborted = true;
+    clearTimeout(timeout);
+    if (!responded) {
+      responded = true;
+    }
+  });
+
   try {
     if (!req.file) {
       return safeRespond(400, {
@@ -105,11 +130,15 @@ const uploadImage = async (req, res) => {
     // Defensive error handling for question parsing
     let parsedQuestions = [];
     try {
+      console.log('Starting question parsing...');
       parsedQuestions = await ocrService.parseQuestions(ocrResult.text, {
         subject: req.body.subject,
         expectedQuestionCount: req.body.expectedQuestionCount
       });
+
+      console.log(`Question parsing completed. Found ${parsedQuestions.length} questions.`);
     } catch (parseError) {
+      console.error('Question parsing failed:', parseError.message);
       await fs.unlink(req.file.path);
       return safeRespond(500, {
         success: false,

@@ -105,13 +105,15 @@ class GeminiQuestionParser {
 INSTRUCTIONS:
 1. Identify individual questions from the text, even if formatting is imperfect due to OCR
 2. For each question, extract:
-   - The question text (clean and complete)
-   - All answer options (for MCQ)
+   - The question text (clean and complete, WITHOUT question numbers like "3.", "Q1.", etc.)
+   - All answer options (for MCQ, WITHOUT option letters/numbers like "a)", "1)", etc.)
    - The correct answer
    - Question type (MCQ, FIB, DESCRIPTIVE)
-3. Handle OCR errors intelligently (fix obvious mistakes like "0" instead of "O", "rn" instead of "m")
-4. Ignore headers, footers, page numbers, and irrelevant text
-5. Return ONLY valid, complete questions
+3. Remove question numbering: If you see "3. What is...", extract only "What is..."
+4. Remove option numbering: If you see "a) Node.js", extract only "Node.js"
+5. Handle OCR errors intelligently (fix obvious mistakes like "0" instead of "O", "rn" instead of "m")
+6. Ignore headers, footers, page numbers, and irrelevant text
+7. Return ONLY valid, complete questions
 
 QUESTION TYPES:
 - MCQ: Multiple choice with 2-5 options (a, b, c, d, e)

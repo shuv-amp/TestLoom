@@ -410,11 +410,17 @@ const submitThread = async () => {
     }
 
     // Replace with your actual API endpoint
-    const response = await $fetch('/api/forums/threads', {
+
+    // Use authManager to send authenticated request
+    const res = await import('~/utils/auth')
+    const authManager = res.default
+    const response = await authManager.authenticatedFetch('/api/forums/threads', {
       method: 'POST',
-      body: payload,
+      body: JSON.stringify(payload),
       credentials: 'include'
     })
+    const data = await response.json()
+    emit('created', data.thread || data)
 
     emit('created', response.thread || response)
     resetForm()

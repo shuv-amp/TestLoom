@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 const { createIndexes } = require('./migrations/createQuestionIndexes');
 const { seedQuestions } = require('./seeds/sampleQuestions');
+const { seedCategories } = require('./seeds/sampleCategories');
 
 const initializeDatabase = async () => {
   try {
@@ -13,6 +14,7 @@ const initializeDatabase = async () => {
     await createIndexes();
 
     console.log('🌱 Seeding sample data...');
+    await seedCategories();
     await seedQuestions();
 
     console.log('🎉 Database initialization completed successfully');

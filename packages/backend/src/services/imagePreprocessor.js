@@ -6,11 +6,9 @@ class UltraImagePreprocessor {
         this.processingVariants = [
             'standard',
             'high_contrast',
-            'denoised',
             'sharpened',
-            'gaussian_blur',
-            'unsharp_mask'
-        ];
+            'denoised'
+        ]; // Reduced from 6 to 4 variants for speed
     }
 
     /**
